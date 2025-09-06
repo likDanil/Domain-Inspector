@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Domain Inspector",
+  "version": "1.0",
+  "description": "Показывает все домены, с которых загружается текущая страница.",
+  "action": {
+    "default_popup": "extension.html",
+    "default_title": "Показать домены"
+  },
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
