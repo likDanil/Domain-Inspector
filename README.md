@@ -61,4 +61,4 @@
 
 Если есть идеи, ошибки или предложения — пишите:
 
-- GitHub Issues: [Issues]([https://github.com/likDanil](https://github.com/likDanil/Domain-Inspector/issues))
+- GitHub Issues: [Issues](https://github.com/likDanil/Domain-Inspector/issues)
