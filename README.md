@@ -1,4 +1,4 @@
-# 🌐 Domain-Inspector
+# 🌐 Domain Inspector
 
 ![GitHub](https://img.shields.io/github/license/likDanil/Domain-Inspector)
 ![GitHub issues](https://img.shields.io/github/issues/likDanil/Domain-Inspector)
