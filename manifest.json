@@ -3,6 +3,11 @@
   "name": "Domain Inspector",
   "version": "1.0",
   "description": "Показывает все домены, с которых загружается текущая страница.",
+  "icons": {
+    "16": "icon.png",
+    "32": "icon.png",
+    "128": "icon.png"
+  },
   "action": {
     "default_popup": "extension.html",
     "default_title": "Показать домены"
