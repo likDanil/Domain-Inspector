@@ -1,252 +1,213 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const scanBtn = document.getElementById('scanBtn');
-    const copyBtn = document.getElementById('copyBtn');
-    const domainsPre = document.getElementById('domains');
-    const themeBtn = document.getElementById('themeBtn');
-    const body = document.body;
-    const style = document.getElementById('theme-style');
+  const copyBtn = document.getElementById('copyBtn');
+  const domainsPre = document.getElementById('domains');
+  const scanCbCollapse = document.getElementById('scanCbCollapse');
+  const scanFormat = document.getElementById('scanFormat');
+  const themeBtn = document.getElementById('themeBtn');
+  const donateBtn = document.getElementById('donateBtn');
+  const body = document.body;
 
-    function sendMessage(tabId, message) {
-        return new Promise((resolve, reject) => {
-            chrome.tabs.sendMessage(tabId, message, (response) => {
-                if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
-                } else {
-                    resolve(response);
-                }
-            });
-        });
-    }
-
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    if (savedTheme === 'dark') {
-        setDarkTheme();
-    }
-
+  (function initTheme(){
+    const saved = localStorage.getItem('theme') || 'dark';
+    if (saved === 'light') body.classList.add('light');
+    themeBtn.textContent = saved === 'light' ? '🌞' : '🌙';
     themeBtn.addEventListener('click', () => {
-        const isDark = body.classList.contains('dark-theme');
-        if (isDark) {
-            setLightTheme();
-        } else {
-            setDarkTheme();
-        }
+      const isLight = body.classList.toggle('light');
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+      themeBtn.textContent = isLight ? '🌞' : '🌙';
     });
+  })();
 
-    function setDarkTheme() {
-        body.classList.add('dark-theme');
-        themeBtn.textContent = '🌙';
-        body.style.opacity = 0.7;
-        setTimeout(() => {
-            style.textContent = getDarkThemeCSS();
-            body.style.transition = 'opacity 0.4s ease';
-            body.style.opacity = 1;
-        }, 10);
-        localStorage.setItem('theme', 'dark');
+  donateBtn.addEventListener('click', () => {
+    chrome.tabs.create({ url: 'https://tbank.ru/cf/3So3sEyMUIm' });
+  });
+
+  const tabScan = document.getElementById('tab-scan');
+  const tabConvert = document.getElementById('tab-convert');
+  const paneScan = document.getElementById('mode-scan');
+  const paneConvert = document.getElementById('mode-convert');
+
+  function setMode(mode) {
+    if (mode === 'scan') {
+      tabScan.setAttribute('aria-selected', 'true');
+      tabConvert.setAttribute('aria-selected', 'false');
+      paneScan.classList.add('active');
+      paneConvert.classList.remove('active');
+    } else {
+      tabScan.setAttribute('aria-selected', 'false');
+      tabConvert.setAttribute('aria-selected', 'true');
+      paneScan.classList.remove('active');
+      paneConvert.classList.add('active');
     }
+  }
+  tabScan.addEventListener('click', () => setMode('scan'));
+  tabConvert.addEventListener('click', () => setMode('convert'));
 
-    function setLightTheme() {
-        body.classList.remove('dark-theme');
-        themeBtn.textContent = '🌞';
-        body.style.opacity = 0.7;
-        setTimeout(() => {
-            style.textContent = getLightThemeCSS();
-            body.style.transition = 'opacity 0.4s ease';
-            body.style.opacity = 1;
-        }, 10);
-        localStorage.setItem('theme', 'light');
+  function sendMessage(tabId, message) {
+    return new Promise((resolve, reject) => {
+      chrome.tabs.sendMessage(tabId, message, (response) => {
+        if (chrome.runtime.lastError) reject(chrome.runtime.lastError);
+        else resolve(response);
+      });
+    });
+  }
+
+  function cleanHost(str) {
+    if (!str) return '';
+    let s = String(str).trim().toLowerCase();
+    if (/^(https?|ftps?|socks\d?|ws|wss|ssh|mailto)$/.test(s)) return '';
+    s = s.replace(/^\*/g, '').replace(/^\.+/, '');
+    try { if (/^https?:\/\//i.test(s)) s = new URL(s).hostname.toLowerCase(); } catch (_) {}
+    try { if (!/^https?:\/\//i.test(s)) s = new URL('http://' + s).hostname.toLowerCase(); } catch (_) {}
+    s = s.split('/')[0].split('?')[0].split('#')[0];
+    s = s.replace(/^www\./, '').replace(/\.+/g, '.').replace(/[^a-z0-9.-]/g, '');
+    return s || '';
+  }
+
+  function getBaseDomain(host) {
+    const h = cleanHost(host);
+    if (!h) return '';
+    if (typeof window.tldts !== 'undefined') {
+      const domain = tldts.getDomain(h, { allowPrivateDomains: true });
+      return domain || h;
     }
+    const parts = h.split('.').filter(Boolean);
+    return parts.length <= 2 ? h : parts.slice(-2).join('.');
+  }
 
-    function getLightThemeCSS() {
-        return `
-            body, pre, button:not(#themeBtn), .footer {
-                transition: background-color 0.4s ease, color 0.4s ease;
-            }
-            body {
-                width: 400px;
-                font-family: Arial, sans-serif;
-                padding: 10px;
-                font-size: 14px;
-                background: white;
-                color: #222;
-                position: relative;
-                margin: 0;
-            }
-            button {
-                display: block;
-                width: 100%;
-                padding: 10px;
-                font-size: 16px;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                margin-bottom: 15px;
-            }
-            button#scanBtn {
-                background-color: #0077cc;
-                color: white;
-            }
-            button#scanBtn:hover {
-                background-color: #005fa3;
-            }
-            button#copyBtn {
-                background-color: #4CAF50;
-                color: white;
-            }
-            button#copyBtn:hover {
-                background-color: #388E3C;
-            }
-            button#themeBtn {
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                width: auto;
-                padding: 6px 10px;
-                font-size: 14px;
-                background: #f0f0f0;
-                border: 1px solid #ccc;
-                color: #333;
-                border-radius: 4px;
-                transition: background-color 0.3s ease, color 0.3s ease;
-            }
-            button#themeBtn:hover {
-                background: #e0e0e0;
-            }
-            pre {
-                background: #f4f4f4;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                padding: 10px;
-                margin: 10px 0;
-                white-space: pre-wrap;
-                word-break: break-all;
-                max-height: 400px;
-                overflow-y: auto;
-            }
-            .footer {
-                font-size: 12px;
-                color: #666;
-                text-align: center;
-                margin-top: 20px;
-            }
-            #copyBtn {
-                display: none;
-            }
-        `;
+  function isSubdomainOf(host, base) {
+    return host !== base && host.endsWith('.' + base);
+  }
+
+  function convert(domains, collapse) {
+    const groups = new Map();
+    for (const h0 of domains) {
+      const h = cleanHost(h0);
+      if (!h) continue;
+      const base = getBaseDomain(h);
+      const g = groups.get(base) || { all: new Set(), subs: new Set() };
+      g.all.add(h);
+      if (isSubdomainOf(h, base)) g.subs.add(h);
+      groups.set(base, g);
     }
-
-    function getDarkThemeCSS() {
-        return `
-            body, pre, button:not(#themeBtn), .footer {
-                transition: background-color 0.4s ease, color 0.4s ease;
-            }
-            body {
-                width: 400px;
-                font-family: Arial, sans-serif;
-                padding: 10px;
-                font-size: 14px;
-                background: #1e1e1e;
-                color: #eee;
-                position: relative;
-                margin: 0;
-            }
-            button {
-                display: block;
-                width: 100%;
-                padding: 10px;
-                font-size: 16px;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                margin-bottom: 15px;
-            }
-            button#scanBtn {
-                background-color: #0066cc;
-            }
-            button#scanBtn:hover {
-                background-color: #0055aa;
-            }
-            button#copyBtn {
-                background-color: #45a049;
-            }
-            button#copyBtn:hover {
-                background-color: #3a853a;
-            }
-            button#themeBtn {
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                width: auto;
-                padding: 6px 10px;
-                font-size: 14px;
-                background: #333;
-                border: 1px solid #555;
-                color: #ddd;
-                border-radius: 4px;
-                transition: background-color 0.3s ease, color 0.3s ease;
-            }
-            button#themeBtn:hover {
-                background: #444;
-            }
-            pre {
-                background: #2d2d2d;
-                border: 1px solid #555;
-                border-radius: 4px;
-                padding: 10px;
-                margin: 10px 0;
-                white-space: pre-wrap;
-                word-break: break-all;
-                max-height: 400px;
-                overflow-y: auto;
-                color: #e0e0e0;
-            }
-            .footer {
-                font-size: 12px;
-                color: #aaa;
-                text-align: center;
-                margin-top: 20px;
-            }
-            #copyBtn {
-                display: none;
-            }
-        `;
+    const keep = new Set();
+    for (const [base, g] of groups.entries()) {
+      if (collapse && g.subs.size >= 2) keep.add(base);
+      for (const h of g.all) {
+        if (!collapse) keep.add(h);
+        else if (!isSubdomainOf(h, base)) keep.add(h);
+        else if (g.subs.size < 2) keep.add(h);
+      }
     }
+    const out = [];
+    for (const h of domains.map(cleanHost)) if (h && keep.has(h) && !out.includes(h)) out.push(h);
+    if (collapse) {
+      for (const [base, g] of groups.entries()) {
+        if (g.subs.size >= 2 && !out.includes(base)) out.push(base);
+      }
+    }
+    return out;
+  }
 
+  function formatOutput(list, mode) {
+    return mode === 'adguard' ? list.join(',') : list.join('\n');
+  }
+
+  let lastRaw = [];
+  let lastScanOut = [];
+  copyBtn.style.display = 'none';
+
+  function applyOutput() {
+    if (!lastRaw.length) {
+      domainsPre.textContent = 'Не найдено доменов. Попробуйте позже.';
+      copyBtn.style.display = 'none';
+      return;
+    }
+    const out = scanCbCollapse && scanCbCollapse.checked ? convert(lastRaw, true) : lastRaw.slice();
+    lastScanOut = out;
+    domainsPre.textContent = formatOutput(out, scanFormat.value);
+    copyBtn.style.display = out.length ? 'block' : 'none';
+  }
+
+  async function runScan() {
+    domainsPre.textContent = '🔍 Сканирование...';
     copyBtn.style.display = 'none';
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const response = await sendMessage(tabs[0].id, { action: 'getDomains' });
+      const raw = (response && response.domains) || [];
+      lastRaw = raw.map(cleanHost).filter(Boolean);
+      applyOutput();
+    } catch (err) {
+      domainsPre.textContent = '❌ Не удалось получить данные. Перезагрузите страницу и попробуйте снова.';
+      copyBtn.style.display = 'none';
+    }
+  }
 
-    scanBtn.addEventListener('click', async () => {
-        domainsPre.textContent = '🔍 Идёт поиск...';
-        copyBtn.style.display = 'none';
+  scanFormat.addEventListener('change', () => {
+    if (lastScanOut.length || lastRaw.length) domainsPre.textContent = formatOutput(scanCbCollapse.checked ? convert(lastRaw, true) : lastRaw.slice(), scanFormat.value);
+  });
 
-        try {
-            const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-            const response = await sendMessage(tabs[0].id, { action: "getDomains" });
+  if (scanCbCollapse) {
+    scanCbCollapse.addEventListener('change', () => applyOutput());
+  }
 
-            const domains = response.domains;
-            if (domains.length === 0) {
-                domainsPre.textContent = "Не найдено доменов. Попробуйте позже.";
-            } else {
-                domainsPre.textContent = domains.join('\n');
-                copyBtn.style.display = 'block';
-            }
-        } catch (err) {
-            domainsPre.textContent = "❌ Не удалось получить данные. Перезагрузите страницу и попробуйте снова.";
-            copyBtn.style.display = 'none';
-        }
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(domainsPre.textContent || '').then(() => {
+      copyBtn.textContent = '✅ Скопировано';
+      setTimeout(() => (copyBtn.textContent = '📋 Скопировать все домены'), 1200);
     });
+  });
 
-    copyBtn.addEventListener('click', () => {
-        const domainsText = domainsPre.textContent;
-        navigator.clipboard.writeText(domainsText).then(() => {
-            copyBtn.textContent = '✅ Скопировано!';
-            setTimeout(() => {
-                copyBtn.textContent = '📋 Скопировать все домены';
-            }, 2000);
-        }).catch(err => {
-            console.error('Не удалось скопировать:', err);
-            copyBtn.textContent = '❌ Ошибка копирования';
-            setTimeout(() => {
-                copyBtn.textContent = '📋 Скопировать все домены';
-            }, 2000);
-        });
+  const convertInput   = document.getElementById('convertInput');
+  const cbCollapse     = document.getElementById('cbCollapse');
+  const convertOutput  = document.getElementById('convertOutput');
+  const copyConvertBtn = document.getElementById('copyConvertBtn');
+  const convertFormat  = document.getElementById('convertFormat');
+
+  let lastConvertOut = [];
+  convertOutput.style.display = 'none';
+  copyConvertBtn.style.display = 'none';
+
+  function tokenizeFlexible(raw) {
+    const noSchemes = (raw || '').replace(/\b[a-z]{2,20}:\/\/+/gi, '');
+    const normalized = noSchemes.replace(/[^a-zA-Z0-9.\-]+/g, ' ').replace(/\s+/g, '\n').trim();
+    return normalized ? normalized.split('\n') : [];
+  }
+
+  function runConvert() {
+    const tokens = tokenizeFlexible(convertInput.value);
+    const list = [];
+    const seen = new Set();
+    for (const t of tokens) {
+      const h = cleanHost(t);
+      if (h && !seen.has(h)) { seen.add(h); list.push(h); }
+    }
+    const converted = convert(list, cbCollapse.checked);
+    lastConvertOut = converted;
+    if (converted.length > 0) {
+      convertOutput.textContent = formatOutput(converted, convertFormat.value);
+      convertOutput.style.display = 'block';
+      copyConvertBtn.style.display = 'block';
+    } else {
+      convertOutput.textContent = '';
+      convertOutput.style.display = 'none';
+      copyConvertBtn.style.display = 'none';
+    }
+  }
+
+  convertInput.addEventListener('input', runConvert);
+  cbCollapse.addEventListener('change', runConvert);
+  convertFormat.addEventListener('change', () => {
+    if (lastConvertOut.length > 0) convertOutput.textContent = formatOutput(lastConvertOut, convertFormat.value);
+  });
+
+  copyConvertBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(convertOutput.textContent || '').then(() => {
+      copyConvertBtn.textContent = '✅ Скопировано';
+      setTimeout(() => (copyConvertBtn.textContent = '📋 Скопировать результат'), 1200);
     });
+  });
+
+  runScan();
 });
