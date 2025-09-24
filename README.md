@@ -28,7 +28,7 @@
   [Domain Inspector — Chrome Web Store](https://chromewebstore.google.com/detail/domain-inspector/eepidnajpldcmdfooaeiojhpcpaakjbf?authuser=0&hl=ru)
 
 - **Mozilla Firefox**:  
-  [Domain Inspector — Firefox Add-ons](https://addons.mozilla.org/ru/firefox/addon/domain-inspector/) (скоро)
+  [Domain Inspector — Firefox Add-ons](https://addons.mozilla.org/ru/firefox/addon/domain-inspector/)
 
 После установки нажми на иконку расширения — **список доменов появится автоматически**.
 
