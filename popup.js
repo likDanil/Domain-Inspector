@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
   const copyBtn = document.getElementById('copyBtn');
   const domainsPre = document.getElementById('domains');
-  const scanCbCollapse = document.getElementById('scanCbCollapse');
   const scanFormat = document.getElementById('scanFormat');
+  const scanCollapseMode = document.getElementById('scanCollapseMode');
   const themeBtn = document.getElementById('themeBtn');
   const donateBtn = document.getElementById('donateBtn');
   const body = document.body;
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return host !== base && host.endsWith('.' + base);
   }
 
-  function convert(domains, collapse) {
+  function convert(domains, mode) {
     const groups = new Map();
     for (const h0 of domains) {
       const h = cleanHost(h0);
@@ -90,21 +90,36 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isSubdomainOf(h, base)) g.subs.add(h);
       groups.set(base, g);
     }
+
+    if (mode === 'none') {
+      const out = [];
+      const seen = new Set();
+      for (const h of domains.map(cleanHost)) {
+        if (h && !seen.has(h)) { seen.add(h); out.push(h); }
+      }
+      return out;
+    }
+
+    if (mode === 'all') {
+      const out = [];
+      for (const [base] of groups.entries()) {
+        if (!out.includes(base)) out.push(base);
+      }
+      return out;
+    }
+
     const keep = new Set();
     for (const [base, g] of groups.entries()) {
-      if (collapse && g.subs.size >= 2) keep.add(base);
+      if (g.subs.size >= 2) keep.add(base);
       for (const h of g.all) {
-        if (!collapse) keep.add(h);
-        else if (!isSubdomainOf(h, base)) keep.add(h);
+        if (!isSubdomainOf(h, base)) keep.add(h);
         else if (g.subs.size < 2) keep.add(h);
       }
     }
     const out = [];
     for (const h of domains.map(cleanHost)) if (h && keep.has(h) && !out.includes(h)) out.push(h);
-    if (collapse) {
-      for (const [base, g] of groups.entries()) {
-        if (g.subs.size >= 2 && !out.includes(base)) out.push(base);
-      }
+    for (const [base, g] of groups.entries()) {
+      if (g.subs.size >= 2 && !out.includes(base)) out.push(base);
     }
     return out;
   }
@@ -123,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
       copyBtn.style.display = 'none';
       return;
     }
-    const out = scanCbCollapse && scanCbCollapse.checked ? convert(lastRaw, true) : lastRaw.slice();
+    const out = convert(lastRaw, scanCollapseMode.value || 'auto');
     lastScanOut = out;
     domainsPre.textContent = formatOutput(out, scanFormat.value);
     copyBtn.style.display = out.length ? 'block' : 'none';
@@ -144,13 +159,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  scanFormat.addEventListener('change', () => {
-    if (lastScanOut.length || lastRaw.length) domainsPre.textContent = formatOutput(scanCbCollapse.checked ? convert(lastRaw, true) : lastRaw.slice(), scanFormat.value);
-  });
-
-  if (scanCbCollapse) {
-    scanCbCollapse.addEventListener('change', () => applyOutput());
-  }
+  scanFormat.addEventListener('change', applyOutput);
+  if (scanCollapseMode) scanCollapseMode.addEventListener('change', applyOutput);
 
   copyBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(domainsPre.textContent || '').then(() => {
@@ -159,11 +169,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  const convertInput   = document.getElementById('convertInput');
-  const cbCollapse     = document.getElementById('cbCollapse');
-  const convertOutput  = document.getElementById('convertOutput');
-  const copyConvertBtn = document.getElementById('copyConvertBtn');
-  const convertFormat  = document.getElementById('convertFormat');
+  const convertInput        = document.getElementById('convertInput');
+  const convertOutput       = document.getElementById('convertOutput');
+  const copyConvertBtn      = document.getElementById('copyConvertBtn');
+  const convertFormat       = document.getElementById('convertFormat');
+  const convertCollapseMode = document.getElementById('convertCollapseMode');
 
   let lastConvertOut = [];
   convertOutput.style.display = 'none';
@@ -183,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const h = cleanHost(t);
       if (h && !seen.has(h)) { seen.add(h); list.push(h); }
     }
-    const converted = convert(list, cbCollapse.checked);
+    const converted = convert(list, (convertCollapseMode && convertCollapseMode.value) || 'auto');
     lastConvertOut = converted;
     if (converted.length > 0) {
       convertOutput.textContent = formatOutput(converted, convertFormat.value);
@@ -197,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   convertInput.addEventListener('input', runConvert);
-  cbCollapse.addEventListener('change', runConvert);
+  if (convertCollapseMode) convertCollapseMode.addEventListener('change', runConvert);
   convertFormat.addEventListener('change', () => {
     if (lastConvertOut.length > 0) convertOutput.textContent = formatOutput(lastConvertOut, convertFormat.value);
   });

@@ -29,7 +29,7 @@
     #copyBtn{ display:block; width:96%; max-width:720px; margin:6px auto 12px; background:var(--success); color:#fff; border:0; padding:12px 16px; border-radius:12px; font-weight:600; }
     #copyBtn:hover{ filter:brightness(0.95); }
     .scan-format-label{ display:block; width:96%; max-width:720px; margin:8px auto 4px; font-weight:600; }
-    #scanFormat,#convertFormat{ display:block; width:96%; max-width:720px; margin:0 auto 6px; text-align:center; text-align-last:center; padding:12px 14px; font-size:16px; border-radius:12px; }
+    #scanFormat,#convertFormat,#scanCollapseMode,#convertCollapseMode{ display:block; width:96%; max-width:720px; margin:0 auto 6px; text-align:center; text-align-last:center; padding:12px 14px; font-size:16px; border-radius:12px; }
     #convertInput{ width:94%; max-width:700px; display:block; margin:6px auto; }
     #convertOutput,#copyConvertBtn{ display:none; }
     #convertOutput{ width:94%; max-width:700px; margin:10px auto 0; }
@@ -62,12 +62,12 @@
 
     <section id="mode-scan" class="mode-pane active" role="tabpanel" aria-labelledby="tab-scan">
       <h3>🌐 Домены на этой странице:</h3>
-      <div class="row" style="margin-left:2%;">
-        <label class="inline-check">
-          <input id="scanCbCollapse" type="checkbox" checked>
-          Сжать субдомены (2+→база)
-        </label>
-      </div>
+      <label for="scanCollapseMode" class="scan-format-label">Режим сжатия субдоменов</label>
+      <select id="scanCollapseMode">
+        <option value="all">Сжатие всех субдоменов</option>
+        <option value="auto" selected>Сжатие субдоменов (2+→база)</option>
+        <option value="none">Без сжатия</option>
+      </select>
       <label for="scanFormat" class="scan-format-label">Формат вывода</label>
       <select id="scanFormat">
         <option value="keen" selected>KeenDNS — по строкам</option>
@@ -79,12 +79,12 @@
 
     <section id="mode-convert" class="mode-pane" role="tabpanel" aria-labelledby="tab-convert">
       <h3>✂️ Конвертация списка доменов</h3>
-      <div class="row">
-        <label class="inline-check">
-          <input id="cbCollapse" type="checkbox" checked>
-          Сжать субдомены (2+→база)
-        </label>
-      </div>
+      <label for="convertCollapseMode" class="scan-format-label">Режим сжатия субдоменов</label>
+      <select id="convertCollapseMode">
+        <option value="all">Сжатие всех субдоменов</option>
+        <option value="auto" selected>Сжатие субдоменов (2+→база)</option>
+        <option value="none">Без сжатия</option>
+      </select>
       <label for="convertFormat" class="scan-format-label">Формат вывода</label>
       <select id="convertFormat">
         <option value="keen" selected>KeenDNS — по строкам</option>
