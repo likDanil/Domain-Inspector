@@ -1,28 +1,25 @@
 {
   "manifest_version": 3,
   "name": "Domain Inspector",
-  "version": "1.3",
+  "version": "1.4",
   "description": "Domain Inspector — расширение для Chrome, которое показывает все домены.",
-  "icons": {
-    "16": "icon.png",
-    "32": "icon.png",
-    "128": "icon.png"
-  },
-  "action": {
-    "default_popup": "extension.html",
-    "default_title": "Показать домены"
-  },
-  "permissions": [
-    "activeTab"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    }
-  ]
+  "icons": { "16": "icon.png", "32": "icon.png", "128": "icon.png" },
+
+  "action": { "default_popup": "extension.html", "default_title": "Показать домены" },
+
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": ["<all_urls>"],
+
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }],
+
+  "options_ui": { "page": "options.html", "open_in_tab": true },
+
+  "web_accessible_resources": [{
+    "resources": ["page-patch.js"],
+    "matches": ["<all_urls>"]
+  }]
 }

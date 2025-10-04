@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Параметры — Domain Inspector</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="title">Параметры</div>
+      <div class="save-state" id="saveState">Изменений нет</div>
+    </div>
+
+    <div class="card">
+      <div class="section">
+        <h3>Метод 1 — сетевые перехваты</h3>
+        <div class="grid">
+          <div class="opt"><input id="enableFetch" type="checkbox"><label for="enableFetch">Fetch</label></div>
+          <div class="opt"><input id="enableXHR" type="checkbox"><label for="enableXHR">XMLHttpRequest</label></div>
+          <div class="opt"><input id="enableBeacon" type="checkbox"><label for="enableBeacon">navigator.sendBeacon</label></div>
+          <div class="opt"><input id="enableWebSocket" type="checkbox"><label for="enableWebSocket">WebSocket</label></div>
+          <div class="opt"><input id="enableEventSource" type="checkbox"><label for="enableEventSource">EventSource (SSE)</label></div>
+          <div class="opt"><input id="enableWorker" type="checkbox"><label for="enableWorker">Worker</label></div>
+          <div class="opt"><input id="enableSharedWorker" type="checkbox"><label for="enableSharedWorker">SharedWorker</label></div>
+          <div class="opt"><input id="enableWebRTC" type="checkbox"><label for="enableWebRTC">WebRTC (ICE: STUN/TURN)</label></div>
+        </div>
+        <div class="row">
+          <button class="btn" data-group="m1" data-mode="all">Включить все</button>
+          <button class="btn" data-group="m1" data-mode="none">Выключить все</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Метод 2 — непрерывное наблюдение</h3>
+        <div class="grid">
+          <div class="opt"><input id="enablePOResource" type="checkbox"><label for="enablePOResource">PerformanceObserver (resource)</label></div>
+          <div class="opt"><input id="enableCSPViolation" type="checkbox"><label for="enableCSPViolation">События CSP (securitypolicyviolation)</label></div>
+        </div>
+        <div class="row">
+          <button class="btn" data-group="m2" data-mode="all">Включить все</button>
+          <button class="btn" data-group="m2" data-mode="none">Выключить все</button>
+          <span class="save-state" style="margin-left:6px;">Изменения применяются к новым вкладкам</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="grid">
+          <div class="bulk-actions" role="group" aria-label="Глобальное управление" style="grid-column:1/-1;">
+            <div class="bulk-text">
+              <div class="bulk-title">Глобальное управление</div>
+              <div class="bulk-sub">Включить/выключить все параметры выше</div>
+            </div>
+            <div class="bulk-buttons">
+              <button class="btn" id="btnAllOn">Включить всё</button>
+              <button class="btn" id="btnAllOff">Выключить всё</button>
+              <button class="btn" id="btnDefaults">Выставить по умолчанию</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card section" id="keenSection">
+      <h3>KeenDNS — роутеры</h3>
+      <div class="muted">Данные хранятся локально на этом устройстве (storage.local). При добавлении выполняется пробный запрос к CLI через RCI.</div>
+
+      <div class="grid" style="margin-top:8px;">
+        <div class="opt" style="flex-direction:column; gap:6px;">
+          <label for="keenUrl">Адрес (домен / IP)</label>
+          <input id="keenUrl" class="input" type="text" placeholder="https://home.netcraze.pro">
+          <small class="muted">Рекомендуется HTTPS. Например: <code>https://home.keenetic.link</code></small>
+        </div>
+        <div class="opt" style="flex-direction:column; gap:6px;">
+          <label for="keenUser">Пользователь</label>
+          <input id="keenUser" class="input" type="text" placeholder="Admin">
+        </div>
+        <div class="opt" style="flex-direction:column; gap:6px;">
+          <label for="keenPass">Пароль</label>
+          <input id="keenPass" class="input" type="password" placeholder="••••••">
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn" id="keenAddBtn">Добавить роутер</button>
+        <span class="save-state" id="keenAddState">—</span>
+      </div>
+
+      <div class="k-list" id="keenList"></div>
+    </div>
+
+    <div class="footer">
+      <div>Domain Inspector • настройки</div>
+      <div>Если что — перезагрузите вкладку с сайтом.</div>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

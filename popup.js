@@ -1,10 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
   const copyBtn = document.getElementById('copyBtn');
+  const sendBtn = document.getElementById('sendKeeneticBtn');
   const domainsPre = document.getElementById('domains');
   const scanFormat = document.getElementById('scanFormat');
   const scanCollapseMode = document.getElementById('scanCollapseMode');
   const themeBtn = document.getElementById('themeBtn');
   const donateBtn = document.getElementById('donateBtn');
+  const groupLabel = document.getElementById('groupLabel');
+  const domainsCount = document.getElementById('domainsCount');
   const body = document.body;
 
   (function initTheme(){
@@ -28,17 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const paneConvert = document.getElementById('mode-convert');
 
   function setMode(mode) {
-    if (mode === 'scan') {
-      tabScan.setAttribute('aria-selected', 'true');
-      tabConvert.setAttribute('aria-selected', 'false');
-      paneScan.classList.add('active');
-      paneConvert.classList.remove('active');
-    } else {
-      tabScan.setAttribute('aria-selected', 'false');
-      tabConvert.setAttribute('aria-selected', 'true');
-      paneScan.classList.remove('active');
-      paneConvert.classList.add('active');
-    }
+    const scan = mode === 'scan';
+    tabScan.setAttribute('aria-selected', scan ? 'true' : 'false');
+    tabConvert.setAttribute('aria-selected', scan ? 'false' : 'true');
+    paneScan.classList.toggle('active', scan);
+    paneConvert.classList.toggle('active', !scan);
   }
   tabScan.addEventListener('click', () => setMode('scan'));
   tabConvert.addEventListener('click', () => setMode('convert'));
@@ -128,34 +125,61 @@ document.addEventListener('DOMContentLoaded', () => {
     return mode === 'adguard' ? list.join(',') : list.join('\n');
   }
 
+  function ruPlural(n, forms = ['домен','домена','доменов']) {
+    const a = Math.abs(n);
+    const n10 = a % 10, n100 = a % 100;
+    if (n10 === 1 && n100 !== 11) return forms[0];
+    if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return forms[1];
+    return forms[2];
+  }
+
   let lastRaw = [];
   let lastScanOut = [];
   copyBtn.style.display = 'none';
+  sendBtn.style.display = 'none';
+  sendBtn.disabled = true;
+
+  function updateButtonsVisibility(out) {
+    const has = (out && out.length) ? true : false;
+    copyBtn.style.display = has ? 'inline-flex' : 'none';
+    const keenSelected = (scanFormat.value === 'keen');
+    sendBtn.style.display = (has && keenSelected) ? 'inline-flex' : 'none';
+    sendBtn.disabled = true;
+  }
 
   function applyOutput() {
     if (!lastRaw.length) {
       domainsPre.textContent = 'Не найдено доменов. Попробуйте позже.';
-      copyBtn.style.display = 'none';
+      domainsCount.textContent = '0 доменов';
+      updateButtonsVisibility([]);
       return;
     }
     const out = convert(lastRaw, scanCollapseMode.value || 'auto');
     lastScanOut = out;
     domainsPre.textContent = formatOutput(out, scanFormat.value);
-    copyBtn.style.display = out.length ? 'block' : 'none';
+    domainsCount.textContent = `${out.length} ${ruPlural(out.length)}`;
+    updateButtonsVisibility(out);
   }
 
   async function runScan() {
     domainsPre.textContent = '🔍 Сканирование...';
-    copyBtn.style.display = 'none';
+    domainsCount.textContent = '';
+    updateButtonsVisibility([]);
     try {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+
+      let host = '';
+      try { host = new URL(tabs[0].url).hostname; } catch (_) {}
+      groupLabel.textContent = host ? `Группа: ${host}` : 'Группа: —';
+
       const response = await sendMessage(tabs[0].id, { action: 'getDomains' });
       const raw = (response && response.domains) || [];
       lastRaw = raw.map(cleanHost).filter(Boolean);
       applyOutput();
     } catch (err) {
       domainsPre.textContent = '❌ Не удалось получить данные. Перезагрузите страницу и попробуйте снова.';
-      copyBtn.style.display = 'none';
+      domainsCount.textContent = '';
+      updateButtonsVisibility([]);
     }
   }
 
@@ -165,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
   copyBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(domainsPre.textContent || '').then(() => {
       copyBtn.textContent = '✅ Скопировано';
-      setTimeout(() => (copyBtn.textContent = '📋 Скопировать все домены'), 1200);
+      setTimeout(() => (copyBtn.textContent = 'Скопировать все домены'), 1200);
     });
   });
 
@@ -174,15 +198,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const copyConvertBtn      = document.getElementById('copyConvertBtn');
   const convertFormat       = document.getElementById('convertFormat');
   const convertCollapseMode = document.getElementById('convertCollapseMode');
+  const sendConvertBtn      = document.getElementById('sendKeeneticBtnConvert');
 
   let lastConvertOut = [];
   convertOutput.style.display = 'none';
   copyConvertBtn.style.display = 'none';
+  sendConvertBtn.style.display = 'none';
+  sendConvertBtn.disabled = true;
 
   function tokenizeFlexible(raw) {
     const noSchemes = (raw || '').replace(/\b[a-z]{2,20}:\/\/+/gi, '');
     const normalized = noSchemes.replace(/[^a-zA-Z0-9.\-]+/g, ' ').replace(/\s+/g, '\n').trim();
     return normalized ? normalized.split('\n') : [];
+  }
+
+  function updateConvertButtonsVisibility(out) {
+    const has = (out && out.length) ? true : false;
+    copyConvertBtn.style.display = has ? 'inline-flex' : 'none';
+    const keenSelected = (convertFormat.value === 'keen');
+    sendConvertBtn.style.display = (has && keenSelected) ? 'inline-flex' : 'none';
+    sendConvertBtn.disabled = true;
   }
 
   function runConvert() {
@@ -195,28 +230,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const converted = convert(list, (convertCollapseMode && convertCollapseMode.value) || 'auto');
     lastConvertOut = converted;
+
     if (converted.length > 0) {
       convertOutput.textContent = formatOutput(converted, convertFormat.value);
       convertOutput.style.display = 'block';
-      copyConvertBtn.style.display = 'block';
     } else {
       convertOutput.textContent = '';
       convertOutput.style.display = 'none';
-      copyConvertBtn.style.display = 'none';
     }
+    updateConvertButtonsVisibility(converted);
   }
 
   convertInput.addEventListener('input', runConvert);
   if (convertCollapseMode) convertCollapseMode.addEventListener('change', runConvert);
   convertFormat.addEventListener('change', () => {
     if (lastConvertOut.length > 0) convertOutput.textContent = formatOutput(lastConvertOut, convertFormat.value);
-  });
-
-  copyConvertBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(convertOutput.textContent || '').then(() => {
-      copyConvertBtn.textContent = '✅ Скопировано';
-      setTimeout(() => (copyConvertBtn.textContent = '📋 Скопировать результат'), 1200);
-    });
+    updateConvertButtonsVisibility(lastConvertOut);
   });
 
   runScan();

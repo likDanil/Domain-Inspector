@@ -3,51 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Domain Inspector</title>
-  <style id="theme-style">
-    :root { --primary:#6366f1; --success:#22c55e; --warning:#f59e0b; --text:#111827; --muted:#6b7280; --bg:#0b1020; --card:#0d1226; --stroke:#1f2937; --dark-text:#e5e7eb; --light-bg:#f5f7fb; --light-text:#111827; --light-card:#ffffff; --light-stroke:#d1d5db; }
-    *,*::before,*::after{ box-sizing:border-box; }
-    body,pre,button:not(.theme-toggle),input,textarea{ transition:background-color .25s ease,color .25s ease,border-color .25s ease,filter .15s ease; }
-    body{ font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans","Helvetica Neue",Arial,"Apple Color Emoji","Segoe UI Emoji"; margin:0; padding:0; background:var(--bg); color:var(--dark-text); font-size:16px; }
-    .container{ max-width:820px; margin:0 auto; padding:8px 16px 8px; }
-    .header{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 2px; }
-    h1{ font-size:24px; margin:0; white-space:nowrap; }
-    .theme-toggle{ border:1px solid var(--stroke); background:var(--card); color:var(--dark-text); width:40px; height:40px; border-radius:999px; padding:0; display:inline-flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; }
-    .mode-tabs{ display:flex; align-items:center; gap:10px; margin:0 0 2px; }
-    .mode-tabs button{ border-radius:10px; padding:10px 12px; background:#11183a; color:#fff; border-color:#263056; font-weight:600; cursor:pointer; }
-    .mode-tabs button[aria-selected="true"]{ background:#1a2379; color:#fff; }
-    .mode-pane{ display:none; }
-    .mode-pane.active{ display:block; }
-    h3{ font-size:18px; margin:1px 0 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-    pre{ background:var(--card); color:var(--dark-text); padding:14px 16px; border-radius:12px; max-height:420px; overflow:auto; white-space:pre-wrap; word-break:break-word; border:1px solid var(--stroke); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; font-size:15px; line-height:1.5; margin:4px auto; }
-    button{ appearance:none; border:1px solid var(--stroke); background:var(--card); color:var(--dark-text); border-radius:12px; padding:12px 16px; cursor:pointer; font-size:15px; line-height:1; margin:6px 0; }
-    button:hover{ background:#0f1530; }
-    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .inline-check{ display:inline-flex; gap:8px; align-items:center; user-select:none; margin:2px 0; }
-    input[type="text"],textarea{ width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--stroke); background:var(--card); color:var(--dark-text); font-size:15px; resize:vertical; }
-    select{ padding:10px 12px; border-radius:12px; border:1px solid var(--stroke); background:var(--card); color:var(--dark-text); font-size:15px; }
-    #domains{ width:96%; max-width:720px; margin:4px auto; }
-    #copyBtn{ display:block; width:96%; max-width:720px; margin:6px auto 12px; background:var(--success); color:#fff; border:0; padding:12px 16px; border-radius:12px; font-weight:600; }
-    #copyBtn:hover{ filter:brightness(0.95); }
-    .scan-format-label{ display:block; width:96%; max-width:720px; margin:8px auto 4px; font-weight:600; }
-    #scanFormat,#convertFormat,#scanCollapseMode,#convertCollapseMode{ display:block; width:96%; max-width:720px; margin:0 auto 6px; text-align:center; text-align-last:center; padding:12px 14px; font-size:16px; border-radius:12px; }
-    #convertInput{ width:94%; max-width:700px; display:block; margin:6px auto; }
-    #convertOutput,#copyConvertBtn{ display:none; }
-    #convertOutput{ width:94%; max-width:700px; margin:10px auto 0; }
-    #copyConvertBtn{ width:94%; max-width:700px; margin:8px auto 12px; background:var(--success); color:#fff; border:0; padding:12px 16px; border-radius:12px; font-weight:600; }
-    #copyConvertBtn:hover{ filter:brightness(0.95); }
-    #donateBtn{ display:block; width:96%; max-width:720px; margin:2px auto 8px; background:var(--primary); color:#fff; border:0; padding:12px 16px; border-radius:12px; font-weight:700; }
-    #donateBtn:hover{ filter:brightness(0.95); }
-    button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
-    body.light{ background:var(--light-bg); color:var(--light-text); }
-    body.light pre{ background:var(--light-card); color:var(--light-text); border-color:var(--light-stroke); }
-    body.light button:not(.theme-toggle){ background:var(--light-card); color:var(--light-text); border-color:var(--light-stroke); }
-    body.light button:not(.theme-toggle):hover{ background:#f9fafb; }
-    body.light input[type="text"],body.light textarea{ background:var(--light-card); color:var(--light-text); border-color:var(--light-stroke); }
-    body.light select{ background:var(--light-card); color:var(--light-text); border-color:var(--light-stroke); }
-    body.light .muted{ color:var(--muted); }
-    body.light .mode-tabs button{ background:#eef2ff; border-color:#c7d2fe; color:#1f2937; }
-    body.light .mode-tabs button[aria-selected="true"]{ background:#c7d2fe; color:#111827; }
-  </style>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="container">
@@ -55,6 +11,7 @@
       <h1>🔎 Domain Inspector</h1>
       <button id="themeBtn" class="theme-toggle" title="Переключить тему" aria-label="Переключить тему">🌙</button>
     </div>
+
     <div class="mode-tabs" role="tablist" aria-label="Режимы">
       <button id="tab-scan" role="tab" aria-selected="true" aria-controls="mode-scan">Сканирование</button>
       <button id="tab-convert" role="tab" aria-selected="false" aria-controls="mode-convert">Конвертация</button>
@@ -62,38 +19,55 @@
 
     <section id="mode-scan" class="mode-pane active" role="tabpanel" aria-labelledby="tab-scan">
       <h3>🌐 Домены на этой странице:</h3>
+
       <label for="scanCollapseMode" class="scan-format-label">Режим сжатия субдоменов</label>
       <select id="scanCollapseMode">
         <option value="all">Сжатие всех субдоменов</option>
         <option value="auto" selected>Сжатие субдоменов (2+→база)</option>
         <option value="none">Без сжатия</option>
       </select>
+
       <label for="scanFormat" class="scan-format-label">Формат вывода</label>
       <select id="scanFormat">
         <option value="keen" selected>KeenDNS — по строкам</option>
         <option value="adguard">AdGuard — через запятые</option>
       </select>
+
+      <div id="groupLabel" class="muted"></div>
       <pre id="domains">🔍 Сканирование...</pre>
-      <button id="copyBtn">📋 Скопировать все домены</button>
+      <div id="domainsCount" class="muted"></div>
+
+      <div class="actions-row">
+        <button id="copyBtn">Скопировать все домены</button>
+        <button id="sendKeeneticBtn" disabled title="Недоступно">Отправить на Keenetic</button>
+      </div>
     </section>
 
     <section id="mode-convert" class="mode-pane" role="tabpanel" aria-labelledby="tab-convert">
       <h3>✂️ Конвертация списка доменов</h3>
+
       <label for="convertCollapseMode" class="scan-format-label">Режим сжатия субдоменов</label>
       <select id="convertCollapseMode">
         <option value="all">Сжатие всех субдоменов</option>
         <option value="auto" selected>Сжатие субдоменов (2+→база)</option>
         <option value="none">Без сжатия</option>
       </select>
+
       <label for="convertFormat" class="scan-format-label">Формат вывода</label>
       <select id="convertFormat">
         <option value="keen" selected>KeenDNS — по строкам</option>
         <option value="adguard">AdGuard — через запятые</option>
       </select>
+
       <textarea id="convertInput" rows="8" placeholder="Вставьте список доменов или URL.
 Разделение выполняется автоматически по любым спецсимволам, кроме точки и тире."></textarea>
+
       <pre id="convertOutput"></pre>
-      <button id="copyConvertBtn">📋 Скопировать результат</button>
+
+      <div class="actions-row">
+        <button id="copyConvertBtn">Скопировать результат</button>
+        <button id="sendKeeneticBtnConvert" disabled title="Недоступно">Отправить на Keenetic</button>
+      </div>
     </section>
 
     <button id="donateBtn">❤️ Поддержать развитие</button>
