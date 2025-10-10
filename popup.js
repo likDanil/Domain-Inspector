@@ -193,12 +193,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+
   const convertInput        = document.getElementById('convertInput');
   const convertOutput       = document.getElementById('convertOutput');
   const copyConvertBtn      = document.getElementById('copyConvertBtn');
   const convertFormat       = document.getElementById('convertFormat');
   const convertCollapseMode = document.getElementById('convertCollapseMode');
   const sendConvertBtn      = document.getElementById('sendKeeneticBtnConvert');
+
+  copyConvertBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(convertOutput.textContent || '').then(() => {
+      copyConvertBtn.textContent = '✅ Скопировано';
+      setTimeout(() => (copyConvertBtn.textContent = '📋 Скопировать результат'), 1200);
+    })
+  });
 
   let lastConvertOut = [];
   convertOutput.style.display = 'none';
@@ -245,6 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (convertCollapseMode) convertCollapseMode.addEventListener('change', runConvert);
   convertFormat.addEventListener('change', () => {
     if (lastConvertOut.length > 0) convertOutput.textContent = formatOutput(lastConvertOut, convertFormat.value);
+
     updateConvertButtonsVisibility(lastConvertOut);
   });
 

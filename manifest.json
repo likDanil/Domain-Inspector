@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Domain Inspector",
-  "version": "1.4",
+  "version": "1.4.1",
   "description": "Domain Inspector — расширение для Chrome, которое показывает все домены.",
   "icons": { "16": "icon.png", "32": "icon.png", "128": "icon.png" },
 
