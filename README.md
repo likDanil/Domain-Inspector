@@ -114,6 +114,7 @@
 ## 🤝 Обратная связь
 
 - GitHub Issues: [Issues](https://github.com/likDanil/Domain-Inspector/issues)
+- Telegram: [Канал](https://t.me/LikDev) | [Чат](https://t.me/+cqUfnqAyuWI2MjNi)
 
 ---
 
