@@ -13,6 +13,11 @@
     enableWebRTC: false,
     enablePOResource: true,
     enableCSPViolation: false,
+    enableServiceWorker: false,
+    enableHTMLElements: false,
+    enableDNSPrefetch: false,
+    enableCSSResources: false,
+    enableManifest: false,
   };
 
   window.addEventListener("message", (e) => {
@@ -28,18 +33,75 @@
     } catch {}
   };
 
+  const postDomainStatus = (host, hasResponse, hasError) => {
+    if (!host) return;
+    try {
+      window.postMessage({ 
+        type: "di_domain_status", 
+        host: String(host),
+        hasResponse: hasResponse || false,
+        hasError: hasError || false
+      }, "*");
+    } catch {}
+  };
+
   const addFromUrl = (u, base) => {
     try {
       const raw = (u && typeof u === "object" && "url" in u) ? u.url : u;
-      const h = new URL(raw, base || location.href).hostname;
-      if (h) postHost(h);
+      if (!raw || typeof raw !== 'string') return;
+      
+      const rawLower = raw.toLowerCase().trim();
+      if (rawLower.startsWith('chrome-extension://') ||
+          rawLower.startsWith('moz-extension://') ||
+          rawLower.startsWith('edge-extension://') ||
+          rawLower.startsWith('safari-extension://') ||
+          rawLower.startsWith('chrome://') ||
+          rawLower.startsWith('chrome-search://') ||
+          rawLower.startsWith('about:') ||
+          rawLower.startsWith('data:') ||
+          rawLower.startsWith('blob:') ||
+          rawLower.startsWith('file://') ||
+          rawLower.startsWith('javascript:') ||
+          rawLower.startsWith('vbscript:')) {
+        return;
+      }
+      
+      const url = new URL(raw, base || location.href);
+      const h = url.hostname;
+      
+      if (!h || h === '' || url.protocol === 'chrome-extension:' || 
+          url.protocol === 'moz-extension:' || url.protocol === 'edge-extension:' ||
+          url.protocol === 'chrome:' || url.protocol === 'about:' ||
+          url.protocol === 'data:' || url.protocol === 'blob:' ||
+          url.protocol === 'file:') {
+        return;
+      }
+      
+      postHost(h);
     } catch {}
   };
 
   try {
     if (CFG.enableFetch && window.fetch) {
       const _fetch = window.fetch.bind(window);
-      window.fetch = function (input, init) { addFromUrl(input); return _fetch(input, init); };
+      window.fetch = function (input, init) {
+        addFromUrl(input);
+        const url = (input && typeof input === "object" && "url" in input) ? input.url : input;
+        try {
+          const host = new URL(url, location.href).hostname;
+          return _fetch(input, init)
+            .then(response => {
+              postDomainStatus(host, true, !response.ok);
+              return response;
+            })
+            .catch(error => {
+              postDomainStatus(host, false, true);
+              throw error;
+            });
+        } catch {
+          return _fetch(input, init);
+        }
+      };
     }
   } catch {}
 
@@ -48,6 +110,18 @@
       const _open = XMLHttpRequest.prototype.open;
       XMLHttpRequest.prototype.open = function (method, url, ...rest) {
         addFromUrl(url);
+        try {
+          const host = new URL(url, location.href).hostname;
+          const originalOnReadyStateChange = this.onreadystatechange;
+          this.addEventListener('load', function() {
+            const hasResponse = this.status > 0;
+            const hasError = this.status >= 400 || this.status === 0;
+            postDomainStatus(host, hasResponse, hasError);
+          }, { once: true });
+          this.addEventListener('error', function() {
+            postDomainStatus(host, false, true);
+          }, { once: true });
+        } catch {}
         return _open.call(this, method, url, ...rest);
       };
     }
@@ -131,7 +205,19 @@
   try {
     if (CFG.enablePOResource && "PerformanceObserver" in window) {
       const po = new PerformanceObserver(list => {
-        for (const r of list.getEntries()) addFromUrl(r.name);
+        for (const r of list.getEntries()) {
+          addFromUrl(r.name);
+          try {
+            const host = new URL(r.name, location.href).hostname;
+            const hasResponse = (r.transferSize > 0 || r.decodedBodySize > 0 || 
+                                 (r.responseStatus && r.responseStatus >= 200 && r.responseStatus < 400)) &&
+                                r.duration > 0;
+            const hasError = (r.responseStatus && r.responseStatus >= 400) || 
+                            (r.duration > 0 && r.transferSize === 0 && r.decodedBodySize === 0 && 
+                             r.responseStatus !== undefined && r.responseStatus !== 0);
+            postDomainStatus(host, hasResponse, hasError);
+          } catch {}
+        }
       });
       po.observe({ entryTypes: ["resource"] });
     }
@@ -142,6 +228,29 @@
       window.addEventListener("securitypolicyviolation", (e) => {
         if (e?.blockedURI) addFromUrl(e.blockedURI);
       }, true);
+    }
+  } catch {}
+
+  try {
+    if (CFG.enableServiceWorker && navigator.serviceWorker && navigator.serviceWorker.register) {
+      const _register = navigator.serviceWorker.register.bind(navigator.serviceWorker);
+      navigator.serviceWorker.register = function (scriptURL, options) {
+        addFromUrl(scriptURL);
+        try {
+          const host = new URL(scriptURL, location.href).hostname;
+          return _register(scriptURL, options)
+            .then(registration => {
+              postDomainStatus(host, true, false);
+              return registration;
+            })
+            .catch(error => {
+              postDomainStatus(host, false, true);
+              throw error;
+            });
+        } catch {
+          return _register(scriptURL, options);
+        }
+      };
     }
   } catch {}
 })();

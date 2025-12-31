@@ -1,24 +1,149 @@
+function initCustomSelect(selectElement) {
+  if (!selectElement || selectElement.dataset.customized === 'true') return;
+  
+  const wrapper = document.createElement('div');
+  wrapper.className = 'custom-select-wrapper';
+  
+  const customSelect = document.createElement('div');
+  customSelect.className = 'custom-select';
+  
+  const trigger = document.createElement('div');
+  trigger.className = 'custom-select-trigger';
+  
+  const selectedText = document.createElement('span');
+  selectedText.className = 'selected-text';
+  
+  const arrow = document.createElement('div');
+  arrow.className = 'arrow';
+  arrow.innerHTML = '<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 7.5l4.5 5 4.5-5"/></svg>';
+  
+  trigger.appendChild(selectedText);
+  trigger.appendChild(arrow);
+  
+  const options = document.createElement('div');
+  options.className = 'custom-select-options';
+  
+  Array.from(selectElement.options).forEach((option) => {
+    const optionEl = document.createElement('div');
+    optionEl.className = 'custom-select-option';
+    optionEl.dataset.value = option.value;
+    optionEl.textContent = option.text;
+    if (option.selected) {
+      optionEl.classList.add('selected');
+      selectedText.textContent = option.text;
+    }
+    optionEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectElement.value = option.value;
+      selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+      
+      options.querySelectorAll('.custom-select-option').forEach(opt => opt.classList.remove('selected'));
+      optionEl.classList.add('selected');
+      selectedText.textContent = option.text;
+      
+      trigger.classList.remove('active');
+      options.classList.remove('show');
+    });
+    options.appendChild(optionEl);
+  });
+  
+  customSelect.appendChild(trigger);
+  customSelect.appendChild(options);
+  wrapper.appendChild(customSelect);
+  
+  selectElement.parentNode.insertBefore(wrapper, selectElement);
+  selectElement.classList.add('hidden-select');
+  selectElement.dataset.customized = 'true';
+  
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isActive = trigger.classList.contains('active');
+    
+    document.querySelectorAll('.custom-select-trigger.active').forEach(t => {
+      if (t !== trigger) {
+        t.classList.remove('active');
+        t.nextElementSibling.classList.remove('show');
+      }
+    });
+    
+    if (isActive) {
+      trigger.classList.remove('active');
+      options.classList.remove('show');
+    } else {
+      trigger.classList.add('active');
+      options.classList.add('show');
+    }
+  });
+  
+  document.addEventListener('click', (e) => {
+    if (!wrapper.contains(e.target)) {
+      trigger.classList.remove('active');
+      options.classList.remove('show');
+    }
+  });
+  
+  const syncCustomSelect = () => {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    if (selectedOption) {
+      selectedText.textContent = selectedOption.text;
+      options.querySelectorAll('.custom-select-option').forEach(opt => {
+        opt.classList.remove('selected');
+        if (opt.dataset.value === selectedOption.value) {
+          opt.classList.add('selected');
+        }
+      });
+    }
+  };
+  
+  selectElement.addEventListener('change', syncCustomSelect);
+  
+  let lastValue = selectElement.value;
+  const checkValue = () => {
+    if (selectElement.value !== lastValue) {
+      lastValue = selectElement.value;
+      syncCustomSelect();
+    }
+  };
+  
+  const valueCheckInterval = setInterval(checkValue, 100);
+  
+  wrapper._cleanup = () => {
+    clearInterval(valueCheckInterval);
+  };
+  
+  return wrapper;
+}
+
+function initAllCustomSelects() {
+  document.querySelectorAll('select:not(.hidden-select)').forEach(select => {
+    if (!select.dataset.customized) {
+      initCustomSelect(select);
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const copyBtn = document.getElementById('copyBtn');
   const sendBtn = document.getElementById('sendKeeneticBtn');
   const domainsPre = document.getElementById('domains');
   const scanFormat = document.getElementById('scanFormat');
   const scanCollapseMode = document.getElementById('scanCollapseMode');
+  const scanDomainFilter = document.getElementById('scanDomainFilter');
   const themeBtn = document.getElementById('themeBtn');
   const donateBtn = document.getElementById('donateBtn');
   const groupLabel = document.getElementById('groupLabel');
   const domainsCount = document.getElementById('domainsCount');
   const body = document.body;
-
-  (function initTheme(){
-    const saved = localStorage.getItem('theme') || 'dark';
-    if (saved === 'light') body.classList.add('light');
-    themeBtn.textContent = saved === 'light' ? '🌞' : '🌙';
-    themeBtn.addEventListener('click', () => {
-      const isLight = body.classList.toggle('light');
-      localStorage.setItem('theme', isLight ? 'light' : 'dark');
-      themeBtn.textContent = isLight ? '🌞' : '🌙';
-    });
+  (function initSettingsBtn(){
+    if (themeBtn) {
+      themeBtn.textContent = '⚙️';
+      themeBtn.setAttribute('aria-label', 'Параметры');
+      themeBtn.title = 'Параметры';
+      themeBtn.addEventListener('click', () => {
+        const url = chrome.runtime.getURL('options.html');
+        chrome.tabs.create({ url });
+      });
+    }
   })();
 
   donateBtn.addEventListener('click', () => {
@@ -61,9 +186,23 @@ document.addEventListener('DOMContentLoaded', () => {
     return s || '';
   }
 
+  function isIPAddress(str) {
+    const parts = str.split('.');
+    if (parts.length !== 4) return false;
+    return parts.every(part => {
+      const num = parseInt(part, 10);
+      return !isNaN(num) && num >= 0 && num <= 255 && String(num) === part;
+    });
+  }
+
   function getBaseDomain(host) {
     const h = cleanHost(host);
     if (!h) return '';
+    
+    if (isIPAddress(h)) {
+      return h;
+    }
+    
     if (typeof window.tldts !== 'undefined') {
       const domain = tldts.getDomain(h, { allowPrivateDomains: true });
       return domain || h;
@@ -73,6 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function isSubdomainOf(host, base) {
+    if (isIPAddress(host) || isIPAddress(base)) {
+      return false;
+    }
     return host !== base && host.endsWith('.' + base);
   }
 
@@ -134,7 +276,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let lastRaw = [];
+  let lastRawWithStatus = [];
   let lastScanOut = [];
+  let scanError = false;
   copyBtn.style.display = 'none';
   sendBtn.style.display = 'none';
   sendBtn.disabled = true;
@@ -144,17 +288,75 @@ document.addEventListener('DOMContentLoaded', () => {
     copyBtn.style.display = has ? 'inline-flex' : 'none';
     const keenSelected = (scanFormat.value === 'keen');
     sendBtn.style.display = (has && keenSelected) ? 'inline-flex' : 'none';
-    sendBtn.disabled = true;
+    sendBtn.disabled = !(has && keenSelected);
+  }
+
+  function filterDomains(domains, domainsWithStatus, filterMode) {
+    if (filterMode === 'all') {
+      return domains;
+    }
+    
+    const statusMap = new Map();
+    domainsWithStatus.forEach(item => {
+      statusMap.set(item.domain, item);
+    });
+    
+    const checkDomainStatus = (domain) => {
+      const domainStatus = statusMap.get(domain);
+      const domainHasResponse = domainStatus && domainStatus.hasResponse;
+      
+      let hasSubdomainWithResponse = false;
+      let hasSubdomainWithoutResponse = false;
+      
+      for (const [fullDomain, status] of statusMap.entries()) {
+        if (isSubdomainOf(fullDomain, domain)) {
+          if (status && status.hasResponse) {
+            hasSubdomainWithResponse = true;
+          } else {
+            hasSubdomainWithoutResponse = true;
+          }
+        }
+      }
+      
+      const hasResponse = domainHasResponse || hasSubdomainWithResponse;
+      
+      return { hasResponse, hasSubdomainWithResponse, hasSubdomainWithoutResponse };
+    };
+    
+    if (filterMode === 'withResponse') {
+      return domains.filter(domain => {
+        const status = checkDomainStatus(domain);
+        return status.hasResponse;
+      });
+    } else if (filterMode === 'withoutResponse') {
+      return domains.filter(domain => {
+        const status = checkDomainStatus(domain);
+        return !status.hasResponse;
+      });
+    }
+    
+    return domains;
   }
 
   function applyOutput() {
     if (!lastRaw.length) {
-      domainsPre.textContent = 'Не найдено доменов. Попробуйте позже.';
-      domainsCount.textContent = '0 доменов';
+      if (scanError) {
+        domainsPre.textContent = '❌ Не удалось получить данные. Перезагрузите страницу и попробуйте снова.';
+        domainsCount.textContent = '';
+      } else {
+        domainsPre.textContent = 'Не найдено доменов. Попробуйте позже.';
+        domainsCount.textContent = '0 доменов';
+      }
       updateButtonsVisibility([]);
       return;
     }
-    const out = convert(lastRaw, scanCollapseMode.value || 'auto');
+    
+    const collapseMode = (scanCollapseMode && scanCollapseMode.value) || 'auto';
+    const collapsedDomains = convert(lastRaw, collapseMode);
+    
+    const filterMode = (scanDomainFilter && scanDomainFilter.value) || 'all';
+    const out = filterDomains(collapsedDomains, lastRawWithStatus, filterMode);
+    
     lastScanOut = out;
     domainsPre.textContent = formatOutput(out, scanFormat.value);
     domainsCount.textContent = `${out.length} ${ruPlural(out.length)}`;
@@ -165,6 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
     domainsPre.textContent = '🔍 Сканирование...';
     domainsCount.textContent = '';
     updateButtonsVisibility([]);
+    scanError = false;
     try {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -175,16 +378,63 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await sendMessage(tabs[0].id, { action: 'getDomains' });
       const raw = (response && response.domains) || [];
       lastRaw = raw.map(cleanHost).filter(Boolean);
+      const rawWithStatus = (response && response.domainsWithStatus) || [];
+      lastRawWithStatus = rawWithStatus.map(item => ({
+        ...item,
+        domain: cleanHost(item.domain)
+      })).filter(item => item.domain);
+      scanError = false;
       applyOutput();
     } catch (err) {
+      scanError = true;
+      lastRaw = [];
+      lastRawWithStatus = [];
       domainsPre.textContent = '❌ Не удалось получить данные. Перезагрузите страницу и попробуйте снова.';
       domainsCount.textContent = '';
       updateButtonsVisibility([]);
     }
   }
 
+  chrome.storage.sync.get({ defaultCollapseMode: 'auto', defaultFormat: 'keen', defaultDomainFilter: 'all' }, (res) => {
+    const defCollapse = res.defaultCollapseMode || 'auto';
+    let defFormat = res.defaultFormat || 'keen';
+    if (defFormat === 'plain') { defFormat = 'keen'; chrome.storage.sync.set({ defaultFormat: defFormat }); }
+    const defFilter = res.defaultDomainFilter || 'all';
+    if (scanCollapseMode) scanCollapseMode.value = defCollapse;
+    const convertCollapseMode = document.getElementById('convertCollapseMode');
+    if (convertCollapseMode) convertCollapseMode.value = defCollapse;
+    if (scanFormat) scanFormat.value = defFormat;
+    const convertFormat = document.getElementById('convertFormat');
+    if (convertFormat) convertFormat.value = defFormat;
+    if (scanDomainFilter) scanDomainFilter.value = defFilter;
+    
+    setTimeout(() => {
+      initAllCustomSelects();
+      document.querySelectorAll('select.hidden-select').forEach(sel => {
+        const wrapper = sel.previousElementSibling;
+        if (wrapper && wrapper.classList.contains('custom-select-wrapper')) {
+          const selectedText = wrapper.querySelector('.selected-text');
+          const selectedOption = sel.options[sel.selectedIndex];
+          if (selectedText && selectedOption) {
+            selectedText.textContent = selectedOption.text;
+            wrapper.querySelectorAll('.custom-select-option').forEach(opt => {
+              opt.classList.remove('selected');
+              if (opt.dataset.value === selectedOption.value) {
+                opt.classList.add('selected');
+              }
+            });
+          }
+        }
+      });
+    }, 50);
+    
+    runScan();
+    runConvert();
+  });
+
   scanFormat.addEventListener('change', applyOutput);
   if (scanCollapseMode) scanCollapseMode.addEventListener('change', applyOutput);
+  if (scanDomainFilter) scanDomainFilter.addEventListener('change', applyOutput);
 
   copyBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(domainsPre.textContent || '').then(() => {
@@ -193,6 +443,37 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  sendBtn.addEventListener('click', async () => {
+    if (!lastScanOut || !lastScanOut.length) return;
+    
+    let groupName = '';
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tabs[0] && tabs[0].url) {
+        const host = new URL(tabs[0].url).hostname;
+        if (host) {
+          const parts = host.split('.').filter(Boolean);
+          groupName = parts.length <= 2 ? host : parts.slice(-2).join('.');
+        }
+      }
+    } catch (_) {}
+    
+    if (!groupName && lastScanOut.length > 0) {
+      const firstDomain = lastScanOut[0];
+      const parts = firstDomain.split('.').filter(Boolean);
+      groupName = parts.length <= 2 ? firstDomain : parts.slice(-2).join('.');
+    }
+    
+    await chrome.storage.session.set({
+      keen_payload: {
+        domains: lastScanOut,
+        group: groupName || 'group'
+      }
+    });
+    
+    const url = chrome.runtime.getURL('keen-send.html');
+    chrome.tabs.create({ url });
+  });
 
   const convertInput        = document.getElementById('convertInput');
   const convertOutput       = document.getElementById('convertOutput');
@@ -205,7 +486,28 @@ document.addEventListener('DOMContentLoaded', () => {
     navigator.clipboard.writeText(convertOutput.textContent || '').then(() => {
       copyConvertBtn.textContent = '✅ Скопировано';
       setTimeout(() => (copyConvertBtn.textContent = '📋 Скопировать результат'), 1200);
-    })
+    });
+  });
+
+  sendConvertBtn.addEventListener('click', async () => {
+    if (!lastConvertOut || !lastConvertOut.length) return;
+    
+    let groupName = 'group';
+    if (lastConvertOut.length > 0) {
+      const firstDomain = lastConvertOut[0];
+      const parts = firstDomain.split('.').filter(Boolean);
+      groupName = parts.length <= 2 ? firstDomain : parts.slice(-2).join('.');
+    }
+    
+    await chrome.storage.session.set({
+      keen_payload: {
+        domains: lastConvertOut,
+        group: groupName
+      }
+    });
+    
+    const url = chrome.runtime.getURL('keen-send.html');
+    chrome.tabs.create({ url });
   });
 
   let lastConvertOut = [];
@@ -225,17 +527,25 @@ document.addEventListener('DOMContentLoaded', () => {
     copyConvertBtn.style.display = has ? 'inline-flex' : 'none';
     const keenSelected = (convertFormat.value === 'keen');
     sendConvertBtn.style.display = (has && keenSelected) ? 'inline-flex' : 'none';
-    sendConvertBtn.disabled = true;
+    sendConvertBtn.disabled = !(has && keenSelected);
   }
 
   function runConvert() {
-    const tokens = tokenizeFlexible(convertInput.value);
+    const input = convertInput.value.trim();
     const list = [];
     const seen = new Set();
-    for (const t of tokens) {
-      const h = cleanHost(t);
+    
+    if (/^https?:\/\//i.test(input) || /^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}/.test(input)) {
+      const h = cleanHost(input);
       if (h && !seen.has(h)) { seen.add(h); list.push(h); }
+    } else {
+      const tokens = tokenizeFlexible(input);
+      for (const t of tokens) {
+        const h = cleanHost(t);
+        if (h && !seen.has(h)) { seen.add(h); list.push(h); }
+      }
     }
+    
     const converted = convert(list, (convertCollapseMode && convertCollapseMode.value) || 'auto');
     lastConvertOut = converted;
 
@@ -253,9 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (convertCollapseMode) convertCollapseMode.addEventListener('change', runConvert);
   convertFormat.addEventListener('change', () => {
     if (lastConvertOut.length > 0) convertOutput.textContent = formatOutput(lastConvertOut, convertFormat.value);
-
     updateConvertButtonsVisibility(lastConvertOut);
   });
 
-  runScan();
 });

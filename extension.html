@@ -33,6 +33,13 @@
         <option value="adguard">AdGuard — через запятые</option>
       </select>
 
+      <label for="scanDomainFilter" class="scan-format-label">Фильтр доменов</label>
+      <select id="scanDomainFilter">
+        <option value="all" selected>Все домены</option>
+        <option value="withResponse">Домены с ответами</option>
+        <option value="withoutResponse">Домены без ответов</option>
+      </select>
+
       <div id="groupLabel" class="muted"></div>
       <pre id="domains">🔍 Сканирование...</pre>
       <div id="domainsCount" class="muted"></div>

@@ -13,85 +13,203 @@
       <div class="save-state" id="saveState">Изменений нет</div>
     </div>
 
-    <div class="card">
-      <div class="section">
-        <h3>Метод 1 — сетевые перехваты</h3>
-        <div class="grid">
-          <div class="opt"><input id="enableFetch" type="checkbox"><label for="enableFetch">Fetch</label></div>
-          <div class="opt"><input id="enableXHR" type="checkbox"><label for="enableXHR">XMLHttpRequest</label></div>
-          <div class="opt"><input id="enableBeacon" type="checkbox"><label for="enableBeacon">navigator.sendBeacon</label></div>
-          <div class="opt"><input id="enableWebSocket" type="checkbox"><label for="enableWebSocket">WebSocket</label></div>
-          <div class="opt"><input id="enableEventSource" type="checkbox"><label for="enableEventSource">EventSource (SSE)</label></div>
-          <div class="opt"><input id="enableWorker" type="checkbox"><label for="enableWorker">Worker</label></div>
-          <div class="opt"><input id="enableSharedWorker" type="checkbox"><label for="enableSharedWorker">SharedWorker</label></div>
-          <div class="opt"><input id="enableWebRTC" type="checkbox"><label for="enableWebRTC">WebRTC (ICE: STUN/TURN)</label></div>
-        </div>
-        <div class="row">
-          <button class="btn" data-group="m1" data-mode="all">Включить все</button>
-          <button class="btn" data-group="m1" data-mode="none">Выключить все</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <h3>Метод 2 — непрерывное наблюдение</h3>
-        <div class="grid">
-          <div class="opt"><input id="enablePOResource" type="checkbox"><label for="enablePOResource">PerformanceObserver (resource)</label></div>
-          <div class="opt"><input id="enableCSPViolation" type="checkbox"><label for="enableCSPViolation">События CSP (securitypolicyviolation)</label></div>
-        </div>
-        <div class="row">
-          <button class="btn" data-group="m2" data-mode="all">Включить все</button>
-          <button class="btn" data-group="m2" data-mode="none">Выключить все</button>
-          <span class="save-state" style="margin-left:6px;">Изменения применяются к новым вкладкам</span>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="grid">
-          <div class="bulk-actions" role="group" aria-label="Глобальное управление" style="grid-column:1/-1;">
-            <div class="bulk-text">
-              <div class="bulk-title">Глобальное управление</div>
-              <div class="bulk-sub">Включить/выключить все параметры выше</div>
+            <div class="layout layout-2col">
+      <aside class="sidebar left">
+        <div class="card section" id="profilesSection">
+          <h3>Профили настроек</h3>
+          <div class="grid">
+            <div class="opt" style="flex-direction:column; gap:6px;">
+              <label for="profileSelect">Текущий профиль</label>
+              <div class="row" style="width:100%">
+                <select id="profileSelect" class="input" style="flex:1; min-width:220px;"></select>
+                <button class="btn" id="profileAddBtn" title="Создать новый профиль">Новый</button>
+                <button class="btn" id="profileRenameBtn" title="Переименовать выбранный профиль">Переименовать</button>
+                <button class="btn" id="profileDeleteBtn" title="Удалить выбранный профиль">Удалить</button>
+              </div>
+              <small class="muted">Профиль содержит параметры справа и выбранный режим сжатия/формат по умолчанию.</small>
             </div>
-            <div class="bulk-buttons">
-              <button class="btn" id="btnAllOn">Включить всё</button>
-              <button class="btn" id="btnAllOff">Выключить всё</button>
-              <button class="btn" id="btnDefaults">Выставить по умолчанию</button>
+          </div>
+
+          <div class="section">
+            <h3>Импорт и экспорт</h3>
+            <div class="grid">
+              <div class="opt" style="flex-direction:column; gap:6px;">
+                <label for="exportLink">Ссылка профиля (base64)</label>
+                <input id="exportLink" class="input" type="text" readonly placeholder="Нажмите «Экспортировать»">
+                <div class="row">
+                  <button class="btn" id="exportBtn">Экспортировать</button>
+                  <button class="btn" id="copyExportBtn">Копировать ссылку</button>
+                  <button class="btn" id="importBtn">Импортировать из ссылки</button>
+                </div>
+                <small class="muted">Можно делиться строкой base64 или ссылкой вида <code>options.html#import=...</code>. Импорт добавит новый профиль.</small>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <div class="card section" id="keenSection">
-      <h3>KeenDNS — роутеры</h3>
-      <div class="muted">Данные хранятся локально на этом устройстве (storage.local). При добавлении выполняется пробный запрос к CLI через RCI.</div>
+        <div class="card section" id="keenSection">
+          <h3>KeenDNS/CrazeDNS — роутеры</h3>
+          <div class="muted">Данные хранятся локально на этом устройстве (storage.local). При добавлении выполняется пробный запрос к CLI через RCI.</div>
 
-      <div class="grid" style="margin-top:8px;">
-        <div class="opt" style="flex-direction:column; gap:6px;">
-          <label for="keenUrl">Адрес (домен / IP)</label>
-          <input id="keenUrl" class="input" type="text" placeholder="https://home.netcraze.pro">
-          <small class="muted">Рекомендуется HTTPS. Например: <code>https://home.keenetic.link</code></small>
-        </div>
-        <div class="opt" style="flex-direction:column; gap:6px;">
-          <label for="keenUser">Пользователь</label>
-          <input id="keenUser" class="input" type="text" placeholder="Admin">
-        </div>
-        <div class="opt" style="flex-direction:column; gap:6px;">
-          <label for="keenPass">Пароль</label>
-          <input id="keenPass" class="input" type="password" placeholder="••••••">
-        </div>
-      </div>
-      <div class="row">
-        <button class="btn" id="keenAddBtn">Добавить роутер</button>
-        <span class="save-state" id="keenAddState">—</span>
-      </div>
+          <div class="grid" style="margin-top:8px;">
+            <div class="opt" style="flex-direction:column; gap:6px;">
+              <label for="keenName">Название роутера</label>
+              <input id="keenName" class="input" type="text" placeholder="Например: Домашний роутер">
+              <small class="muted">Произвольное название для удобства идентификации</small>
+            </div>
+            <div class="opt" style="flex-direction:column; gap:6px;">
+              <label for="keenUrl">Адрес (домен / IP)</label>
+              <input id="keenUrl" class="input" type="text" placeholder="https://home.netcraze.pro">
+              <small class="muted">Рекомендуется HTTPS. Например: <code>https://home.keenetic.link</code></small>
+            </div>
+            <div class="opt" style="flex-direction:column; gap:6px;">
+              <label for="keenUser">Пользователь</label>
+              <input id="keenUser" class="input" type="text" placeholder="Admin">
+            </div>
+            <div class="opt" style="flex-direction:column; gap:6px;">
+              <label for="keenPass">Пароль</label>
+              <div style="position:relative;">
+                <input id="keenPass" class="input" type="password" placeholder="••••••" style="padding-right:40px;">
+                <button type="button" id="keenPassToggle" class="password-toggle" aria-label="Показать пароль" title="Показать пароль">
+                  <svg class="eye-open" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 4C6 4 2.73 6.11 1 9.5C2.73 12.89 6 15 10 15C14 15 17.27 12.89 19 9.5C17.27 6.11 14 4 10 4ZM10 12.5C8.07 12.5 6.5 10.93 6.5 9C6.5 7.07 8.07 5.5 10 5.5C11.93 5.5 13.5 7.07 13.5 9C13.5 10.93 11.93 12.5 10 12.5ZM10 7C8.62 7 7.5 8.12 7.5 9.5C7.5 10.88 8.62 12 10 12C11.38 12 12.5 10.88 12.5 9.5C12.5 8.12 11.38 7 10 7Z" fill="currentColor"/>
+                  </svg>
+                  <svg class="eye-closed" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+                    <path d="M3.28 2.22L2.22 3.28L6.5 7.56L6.5 9.5C6.5 10.88 7.62 12 9 12L10.44 10.56L16.72 16.84L17.78 15.78L3.28 2.22ZM10 4C6 4 2.73 6.11 1 9.5C2.73 12.89 6 15 10 15C11.5 15 12.89 14.62 14.11 14L12.39 12.28C11.5 12.62 10.78 12.5 10 12.5C8.07 12.5 6.5 10.93 6.5 9C6.5 8.22 6.72 7.5 7.06 6.61L4.89 4.44C6.23 4.16 7.58 4 9 4H10Z" fill="currentColor"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn" id="keenAddBtn">Добавить роутер</button>
+            <button class="btn" id="keenCancelBtn" style="display:none;">Отмена</button>
+            <span class="save-state" id="keenAddState">—</span>
+          </div>
 
-      <div class="k-list" id="keenList"></div>
+          <div class="k-list" id="keenList"></div>
+        </div>
+      </aside>
+
+      <main class="main right">
+        <div class="card section" id="defaultSettingsSection">
+          <h3>Настройки по умолчанию</h3>
+          <div class="grid">
+            <div class="opt" style="flex-direction:column; gap:6px;">
+              <label for="defaultCollapseMode">Режим сжатия</label>
+              <select id="defaultCollapseMode" class="input">
+                <option value="all">Сжатие всех субдоменов</option>
+                <option value="auto">Сжатие субдоменов (2+→база)</option>
+                <option value="none">Без сжатия</option>
+              </select>
+              <small class="muted">Этот режим будет выбран по умолчанию в окне расширения (его можно сменить там же).</small>
+            </div>
+            <div class="opt" style="flex-direction:column; gap:6px;">
+              <label for="defaultFormat">Формат вывода</label>
+              <select id="defaultFormat" class="input">
+                <option value="keen">KeenDNS — по строкам</option>
+                <option value="adguard">AdGuard — через запятые</option>
+              </select>
+              <small class="muted">Этот формат будет выбран по умолчанию в окне расширения (его можно сменить там же).</small>
+            </div>
+            <div class="opt" style="flex-direction:column; gap:6px;">
+              <label for="defaultDomainFilter">Фильтр доменов</label>
+              <select id="defaultDomainFilter" class="input">
+                <option value="all">Все домены</option>
+                <option value="withResponse">Домены с ответами</option>
+                <option value="withoutResponse">Домены без ответов</option>
+              </select>
+              <small class="muted">Этот фильтр будет выбран по умолчанию в окне расширения (его можно сменить там же).</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section">
+            <h3 class="method-header">Метод 1 — сетевые перехваты<span class="method-info-btn" data-method="m1">i</span></h3>
+            <div class="grid">
+              <div class="opt"><input id="enableFetch" type="checkbox"><label for="enableFetch">Fetch</label></div>
+              <div class="opt"><input id="enableXHR" type="checkbox"><label for="enableXHR">XMLHttpRequest</label></div>
+              <div class="opt"><input id="enableBeacon" type="checkbox"><label for="enableBeacon">navigator.sendBeacon</label></div>
+              <div class="opt"><input id="enableWebSocket" type="checkbox"><label for="enableWebSocket">WebSocket</label></div>
+              <div class="opt"><input id="enableEventSource" type="checkbox"><label for="enableEventSource">EventSource (SSE)</label></div>
+              <div class="opt"><input id="enableWorker" type="checkbox"><label for="enableWorker">Worker</label></div>
+              <div class="opt"><input id="enableSharedWorker" type="checkbox"><label for="enableSharedWorker">SharedWorker</label></div>
+              <div class="opt"><input id="enableWebRTC" type="checkbox"><label for="enableWebRTC">WebRTC (ICE: STUN/TURN)</label></div>
+            </div>
+            <div class="row">
+              <button class="btn" data-group="m1" data-mode="all">Включить все</button>
+              <button class="btn" data-group="m1" data-mode="none">Выключить все</button>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3 class="method-header">Метод 2 — непрерывное наблюдение<span class="method-info-btn" data-method="m2">i</span></h3>
+            <div class="grid">
+              <div class="opt"><input id="enablePOResource" type="checkbox"><label for="enablePOResource">PerformanceObserver (resource)</label></div>
+              <div class="opt"><input id="enableCSPViolation" type="checkbox"><label for="enableCSPViolation">События CSP (securitypolicyviolation)</label></div>
+            </div>
+            <div class="row">
+              <button class="btn" data-group="m2" data-mode="all">Включить все</button>
+              <button class="btn" data-group="m2" data-mode="none">Выключить все</button>
+              <span class="save-state" style="margin-left:6px;">Изменения применяются к новым вкладкам</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3 class="method-header">Метод 3 — анализ DOM и ресурсов<span class="method-info-btn" data-method="m3">i</span></h3>
+            <div class="grid">
+              <div class="opt"><input id="enableServiceWorker" type="checkbox"><label for="enableServiceWorker">Service Worker</label></div>
+              <div class="opt"><input id="enableHTMLElements" type="checkbox"><label for="enableHTMLElements">HTML элементы (src/href)</label></div>
+              <div class="opt"><input id="enableDNSPrefetch" type="checkbox"><label for="enableDNSPrefetch">DNS Prefetch/Preconnect</label></div>
+              <div class="opt"><input id="enableCSSResources" type="checkbox"><label for="enableCSSResources">CSS ресурсы (url/@import)</label></div>
+              <div class="opt"><input id="enableManifest" type="checkbox"><label for="enableManifest">Веб-манифест (PWA)</label></div>
+            </div>
+            <div class="row">
+              <button class="btn" data-group="m3" data-mode="all">Включить все</button>
+              <button class="btn" data-group="m3" data-mode="none">Выключить все</button>
+              <span class="save-state" style="margin-left:6px;">Изменения применяются к новым вкладкам</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="grid">
+              <div class="bulk-actions" role="group" aria-label="Глобальное управление" style="grid-column:1/-1;">
+                <div class="bulk-text">
+                  <div class="bulk-title">Глобальное управление</div>
+                  <div class="bulk-sub">Включить/выключить все параметры выше</div>
+                </div>
+                <div class="bulk-buttons">
+                  <button class="btn" id="btnAllOn">Включить всё</button>
+                  <button class="btn" id="btnAllOff">Выключить всё</button>
+                  <button class="btn" id="btnDefaults">Выставить по умолчанию</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
 
     <div class="footer">
       <div>Domain Inspector • настройки</div>
       <div>Если что — перезагрузите вкладку с сайтом.</div>
+    </div>
+  </div>
+
+  <div id="modalOverlay" class="modal-overlay" style="display: none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">Заголовок</h3>
+      </div>
+      <div class="modal-body">
+        <p id="modalMessage">Сообщение</p>
+        <input type="text" id="modalInput" class="input" style="display: none; margin-top: 12px;" placeholder="">
+      </div>
+      <div class="modal-footer">
+        <button id="modalCancel" class="btn" style="display: none;">Отмена</button>
+        <button id="modalOk" class="btn">OK</button>
+      </div>
     </div>
   </div>
 
