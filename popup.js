@@ -535,14 +535,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const list = [];
     const seen = new Set();
     
-    if (/^https?:\/\//i.test(input) || /^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}/.test(input)) {
-      const h = cleanHost(input);
+    // First, extract URL-like strings (with scheme or domain with path/query)
+    // This regex matches URLs with scheme OR domains that contain / or ?
+    const urlLikePattern = /(https?|ftps?|ws|wss):\/\/[^\s,;|\n]+|[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}(?:\/[^\s,;|\n]+|\?[^\s,;|\n]+)/g;
+    const urlMatches = [];
+    let match;
+    while ((match = urlLikePattern.exec(input)) !== null) {
+      urlMatches.push({ text: match[0], index: match.index });
+    }
+    
+    // Remove matched URLs from input to process remaining text
+    let remainingInput = input;
+    for (let i = urlMatches.length - 1; i >= 0; i--) {
+      const matchText = urlMatches[i].text;
+      const matchIndex = urlMatches[i].index;
+      remainingInput = remainingInput.substring(0, matchIndex) + 
+                       ' '.repeat(matchText.length) + 
+                       remainingInput.substring(matchIndex + matchText.length);
+    }
+    
+    // Process URL matches
+    for (const match of urlMatches) {
+      const h = cleanHost(match.text);
       if (h && !seen.has(h)) { seen.add(h); list.push(h); }
-    } else {
-      const tokens = tokenizeFlexible(input);
-      for (const t of tokens) {
-        const h = cleanHost(t);
-        if (h && !seen.has(h)) { seen.add(h); list.push(h); }
+    }
+    
+    // Process remaining content (split by separators and tokenize)
+    if (remainingInput.trim()) {
+      const parts = remainingInput.split(/[,;|\n]+/).map(p => p.trim()).filter(p => p);
+      for (const part of parts) {
+        const tokens = tokenizeFlexible(part);
+        for (const t of tokens) {
+          const h = cleanHost(t);
+          if (h && !seen.has(h)) { seen.add(h); list.push(h); }
+        }
       }
     }
     
