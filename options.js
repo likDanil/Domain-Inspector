@@ -806,7 +806,52 @@ function addMethodInfoIcons() {
   });
 }
 
+// Theme management
+async function loadTheme() {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get({ theme: 'dark' }, (res) => {
+      resolve(res.theme || 'dark');
+    });
+  });
+}
+
+async function saveTheme(theme) {
+  return new Promise((resolve) => {
+    chrome.storage.sync.set({ theme }, resolve);
+  });
+}
+
+async function applyTheme(theme) {
+  const body = document.body;
+  const themeToggle = $('themeToggle');
+  
+  if (theme === 'light') {
+    body.classList.add('light');
+    if (themeToggle) themeToggle.textContent = '☀️';
+  } else {
+    body.classList.remove('light');
+    if (themeToggle) themeToggle.textContent = '🌙';
+  }
+}
+
+async function initTheme() {
+  const themeToggle = $('themeToggle');
+  if (!themeToggle) return;
+  
+  const currentTheme = await loadTheme();
+  await applyTheme(currentTheme);
+  
+  themeToggle.addEventListener('click', async () => {
+    const currentTheme = await loadTheme();
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    await saveTheme(newTheme);
+    await applyTheme(newTheme);
+  });
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
+  await initTheme();
+  
   addInfoIcons();
   addMethodInfoIcons();
 

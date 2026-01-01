@@ -2,13 +2,46 @@
       --bg:#0b1024; --card:#11173a; --stroke:#263056; --text:#e5e7eb;
       --muted:#9ca3af; --accent:#1a2379; --primary:#6366f1; --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
     }
-    @media (prefers-color-scheme: light){
-      :root{ --bg:#f8fafc; --card:#ffffff; --stroke:#d1d5db; --text:#111827; --muted:#6b7280; --accent:#1a2379; }
+    
+    /* Light theme variables */
+    body.light{
+      --bg:#f8fafc; --card:#ffffff; --stroke:#d1d5db; --text:#111827; --muted:#6b7280; --accent:#1a2379;
     }
-    *{ box-sizing:border-box; }
+    
+    /* Theme toggle button */
+    .theme-toggle{
+      border:1px solid var(--stroke);
+      background:var(--card);
+      color:var(--text);
+      width:40px;
+      height:40px;
+      border-radius:999px;
+      padding:0;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:18px;
+      cursor:pointer;
+      transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow:0 2px 8px rgba(0,0,0,.1);
+    }
+    .theme-toggle:hover{
+      transform:scale(1.05);
+      box-shadow:0 4px 12px rgba(0,0,0,.15);
+      filter:brightness(1.1);
+    }
+    .theme-toggle:active{
+      transform:scale(0.95);
+    }
+    
+    /* Smooth transitions for theme switching */
+    *{
+      box-sizing:border-box;
+      transition:background-color 0.3s ease,color 0.3s ease,border-color 0.3s ease;
+    }
     body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); }
     .wrap{ width:100%; max-width:none; margin:0 auto; padding:20px 16px 40px; }
-    .header{ display:flex; align-items:center; gap:10px; }
+    .header{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
     .title{ font-size:22px; font-weight:700; padding:8px 12px; border-radius:12px; background:var(--accent); color:#fff; box-shadow:0 4px 24px rgba(26,35,121,.25); }
     .card{ background:var(--card); border:1px solid var(--stroke); border-radius:16px; padding:14px; box-shadow:0 6px 26px rgba(0,0,0,.15); }
     .section{ margin-top:14px; }
@@ -440,4 +473,148 @@ select.input:not(.hidden-select):focus{
 .modal-footer .btn:last-child:hover {
   background: rgba(99,102,241,.8);
   filter: brightness(1.1);
+}
+
+/* Light theme styles */
+body.light {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body.light .card {
+  background: var(--card);
+  border-color: var(--stroke);
+  box-shadow: 0 6px 26px rgba(0,0,0,.08);
+}
+
+body.light .opt {
+  background: rgba(0,0,0,.02);
+  border-color: var(--stroke);
+}
+
+body.light .btn {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--stroke);
+}
+
+body.light .btn:hover {
+  background: rgba(99,102,241,.05);
+  border-color: rgba(99,102,241,.3);
+}
+
+body.light .input {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--stroke);
+}
+
+body.light .input:focus {
+  border-color: var(--primary);
+  background: rgba(99,102,241,.02);
+}
+
+body.light .custom-select-trigger {
+  background: var(--card);
+  border-color: rgba(99,102,241,.4);
+  color: var(--text);
+}
+
+body.light .custom-select-trigger:hover {
+  background: rgba(99,102,241,.05);
+}
+
+body.light .custom-select-options {
+  background: var(--card);
+  border-color: rgba(99,102,241,.4);
+  box-shadow: 0 8px 32px rgba(0,0,0,.15);
+}
+
+body.light .custom-select-option {
+  background: var(--card);
+  color: var(--text);
+  border-bottom-color: rgba(0,0,0,.05);
+}
+
+body.light .custom-select-option:hover {
+  background: rgba(99,102,241,.1);
+}
+
+body.light .custom-select-option.selected {
+  background: var(--primary);
+  color: #fff;
+}
+
+body.light .modal {
+  background: var(--card);
+  border-color: var(--stroke);
+  box-shadow: 0 12px 40px rgba(0,0,0,.2);
+}
+
+body.light .modal-header {
+  border-bottom-color: var(--stroke);
+}
+
+body.light .modal-footer {
+  border-top-color: var(--stroke);
+}
+
+body.light .modal-footer .btn:first-child {
+  background: transparent;
+  border-color: var(--stroke);
+}
+
+body.light .modal-footer .btn:first-child:hover {
+  background: rgba(0,0,0,.05);
+}
+
+body.light .k-item {
+  background: rgba(0,0,0,.02);
+  border-color: var(--stroke);
+}
+
+body.light .bulk-actions {
+  background: rgba(0,0,0,.02);
+  border-color: var(--stroke);
+}
+
+body.light select.input:not(.hidden-select) {
+  background-color: var(--card);
+  border-color: var(--stroke);
+  color: var(--text);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path fill='%23111827' d='M5.5 7.5l4.5 5 4.5-5'/></svg>");
+}
+
+body.light select.input:not(.hidden-select):hover {
+  border-color: var(--primary);
+  background-color: rgba(99,102,241,.05);
+}
+
+body.light select.input:not(.hidden-select):focus {
+  border-color: var(--primary);
+  background-color: rgba(99,102,241,.08);
+}
+
+body.light .password-toggle {
+  color: var(--muted);
+}
+
+body.light .password-toggle:hover {
+  color: var(--text);
+}
+
+body.light .method-info-btn:hover {
+  background: rgba(0,0,0,.05);
+}
+
+body.light .opt .info-btn:hover {
+  background: rgba(0,0,0,.05);
+}
+
+body.light .method-hint {
+  box-shadow: 0 12px 24px rgba(0,0,0,.15);
+}
+
+body.light .opt .hint {
+  box-shadow: 0 12px 24px rgba(0,0,0,.15);
 }

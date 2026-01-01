@@ -130,21 +130,60 @@ document.addEventListener('DOMContentLoaded', () => {
   const scanCollapseMode = document.getElementById('scanCollapseMode');
   const scanDomainFilter = document.getElementById('scanDomainFilter');
   const themeBtn = document.getElementById('themeBtn');
+  const settingsBtn = document.getElementById('settingsBtn');
   const donateBtn = document.getElementById('donateBtn');
   const groupLabel = document.getElementById('groupLabel');
   const domainsCount = document.getElementById('domainsCount');
   const body = document.body;
-  (function initSettingsBtn(){
+  
+  // Settings button
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', () => {
+      const url = chrome.runtime.getURL('options.html');
+      chrome.tabs.create({ url });
+    });
+  }
+  
+  // Theme management
+  async function loadTheme() {
+    return new Promise((resolve) => {
+      chrome.storage.sync.get({ theme: 'dark' }, (res) => {
+        resolve(res.theme || 'dark');
+      });
+    });
+  }
+
+  async function saveTheme(theme) {
+    return new Promise((resolve) => {
+      chrome.storage.sync.set({ theme }, resolve);
+    });
+  }
+
+  async function applyTheme(theme) {
+    if (theme === 'light') {
+      body.classList.add('light');
+      if (themeBtn) themeBtn.textContent = '☀️';
+    } else {
+      body.classList.remove('light');
+      if (themeBtn) themeBtn.textContent = '🌙';
+    }
+  }
+
+  async function initTheme() {
+    const currentTheme = await loadTheme();
+    await applyTheme(currentTheme);
+    
     if (themeBtn) {
-      themeBtn.textContent = '⚙️';
-      themeBtn.setAttribute('aria-label', 'Параметры');
-      themeBtn.title = 'Параметры';
-      themeBtn.addEventListener('click', () => {
-        const url = chrome.runtime.getURL('options.html');
-        chrome.tabs.create({ url });
+      themeBtn.addEventListener('click', async () => {
+        const currentTheme = await loadTheme();
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        await saveTheme(newTheme);
+        await applyTheme(newTheme);
       });
     }
-  })();
+  }
+  
+  initTheme();
 
   donateBtn.addEventListener('click', () => {
     chrome.tabs.create({ url: 'https://tbank.ru/cf/3So3sEyMUIm' });
