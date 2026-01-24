@@ -303,7 +303,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function formatOutput(list, mode) {
-    return mode === 'adguard' ? list.join(',') : list.join('\n');
+    if (mode === 'adguard') {
+      return list.join(',');
+    } else if (mode === '3xui') {
+      return list.join(', ');
+    }
+    return list.join('\n');
   }
 
   function ruPlural(n, forms = ['домен','домена','доменов']) {
