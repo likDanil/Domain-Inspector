@@ -1,10 +1,12 @@
-  'cloudflare': ['cloudflare', 'cf-', '.cloudflare.com'],
-  'akamai': ['akamai', 'akamaiedge', 'akamaihd'],
-  'google': ['google', 'googleusercontent', 'gstatic', 'googletagmanager', 'googleapis', 'google-analytics'],
-  'amazon': ['amazonaws', 'cloudfront', 'amazon', 'aws'],
-  'microsoft': ['microsoft', 'azure', 'msecnd', 'live.com', 'office.com', 'office365'],
-  'meta': ['facebook', 'fbcdn', 'instagram', 'whatsapp', 'meta'],
-  'roblox': ['roblox', 'rbxcdn'],
-  'sentry': ['sentry.io', 'sentry'],
-  'yandex': ['yastatic', 'yandex', 'yandex.net', 'yandex.ru'],
-  'vk': ['.vk.com', 'vkontakte', 'userapi.com', 'vkuseraudio', 'vk-portal', 'vkuser', 'vk-cdn', 'vkid', 'vk.com', 'dzen.ru', 'ok.ru']
+{
+  "cloudflare": ["cloudflare", "cf-", ".cloudflare.com"],
+  "akamai": ["akamai", "akamaiedge", "akamaihd"],
+  "google": ["google", "googleusercontent", "gstatic", "googletagmanager", "googleapis", "google-analytics"],
+  "amazon": ["amazonaws", "cloudfront", "amazon", "aws"],
+  "microsoft": ["microsoft", "azure", "msecnd", "live.com", "office.com", "office365"],
+  "meta": ["facebook", "fbcdn", "instagram", "whatsapp", "meta"],
+  "roblox": ["roblox", "rbxcdn"],
+  "sentry": ["sentry.io", "sentry"],
+  "yandex": ["yastatic", "yandex", "yandex.net", "yandex.ru"],
+  "vk": [".vk.com", "vkontakte", "userapi.com", "vkuseraudio", "vk-portal", "vkuser", "vk-cdn", "vkid", "vk.com", "dzen.ru", "ok.ru"]
+}
