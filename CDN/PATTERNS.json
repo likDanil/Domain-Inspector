@@ -8,5 +8,5 @@
   "roblox": ["roblox", "rbxcdn"],
   "sentry": ["sentry.io", "sentry"],
   "yandex": ["yastatic", "yandex", "yandex.net", "yandex.ru"],
-  "vk": [".vk.com", "vkontakte", "userapi.com", "vkuseraudio", "vk-portal", "vkuser", "vk-cdn", "vkid", "vk.com", "dzen.ru", "ok.ru", "datacloudmail.ru"]
+  "vk": [".vk.com", "vkontakte", "userapi.com", "vkuseraudio", "vk-portal", "vkuser", "vk-cdn", "vkid", "vk.com", "dzen.ru", "ok.ru", "datacloudmail.ru", "okcdn.ru"]
 }
