@@ -1,7 +1,7 @@
 {
   "cloudflare": ["cloudflare", "cf-", ".cloudflare.com"],
   "akamai": ["akamai", "akamaiedge", "akamaihd"],
-  "google": ["google", "googleusercontent", "gstatic", "googletagmanager", "googleapis", "google-analytics"],
+  "google": ["google", "googleusercontent", "gstatic", "googletagmanager", "googleapis", "google-analytics", "ggpht.com", "youtube.com"],
   "amazon": ["amazonaws", "cloudfront", "amazon", "aws"],
   "microsoft": ["microsoft", "azure", "msecnd", "live.com", "office.com", "office365"],
   "meta": ["facebook", "fbcdn", "instagram", "whatsapp", "meta"],
