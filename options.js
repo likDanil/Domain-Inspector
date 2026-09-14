@@ -517,17 +517,6 @@ async function applyProfile(item) {
   const filterSel = $("defaultDomainFilter");
   if (filterSel) filterSel.value = item.defaultDomainFilter || DEFAULT_DOMAIN_FILTER;
   chrome.storage.sync.set({ di_cfg: item.di_cfg || DEFAULT_CFG, defaultCollapseMode: item.defaultCollapseMode || DEFAULT_COLLAPSE_MODE, defaultFormat: item.defaultFormat || DEFAULT_FORMAT, defaultDomainFilter: item.defaultDomainFilter || DEFAULT_DOMAIN_FILTER }, showSaved);
-  try {
-    const key = 'keen_hosts__' + (ACTIVE_PROFILE_ID || 'default');
-    chrome.storage.local.get(['keen_hosts', key], (res) => {
-      const legacy = Array.isArray(res.keen_hosts) ? res.keen_hosts : null;
-      const prof = Array.isArray(res[key]) ? res[key] : null;
-      if (legacy && !prof) {
-        chrome.storage.local.set({ [key]: legacy });
-      }
-      loadKeenHosts().then(renderKeenList);
-    });
-  } catch(_) { loadKeenHosts().then(renderKeenList); }
 }
 
 function updateActiveProfile(mutator) {
@@ -539,195 +528,6 @@ function updateActiveProfile(mutator) {
       renderProfilesSelect(next.data);
     }
   });
-}
-
-const keenElems = {
-  name: $("keenName"),
-  url: $("keenUrl"),
-  user: $("keenUser"),
-  pass: $("keenPass"),
-  addBtn: $("keenAddBtn"),
-  cancelBtn: $("keenCancelBtn"),
-  addState: $("keenAddState"),
-  list: $("keenList"),
-};
-
-let editingRouterId = null; // ID редактируемого роутера
-
-function resetKeenForm() {
-  keenElems.name.value = '';
-  keenElems.url.value = '';
-  keenElems.user.value = '';
-  keenElems.pass.value = '';
-  keenElems.pass.type = 'password'; // Сбрасываем тип на password
-  editingRouterId = null;
-  keenElems.addBtn.textContent = 'Добавить роутер';
-  if (keenElems.cancelBtn) keenElems.cancelBtn.style.display = 'none';
-  
-  const passwordToggle = document.getElementById('keenPassToggle');
-  if (passwordToggle) {
-    const eyeOpen = passwordToggle.querySelector('.eye-open');
-    const eyeClosed = passwordToggle.querySelector('.eye-closed');
-    if (eyeOpen) eyeOpen.style.display = 'block';
-    if (eyeClosed) eyeClosed.style.display = 'none';
-    passwordToggle.setAttribute('aria-label', 'Показать пароль');
-    passwordToggle.setAttribute('title', 'Показать пароль');
-  }
-}
-
-function normalizeOrigin(input) {
-  let s = String(input || '').trim();
-  if (!s) return '';
-  if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
-  try {
-    const u = new URL(s);
-    return u.origin;
-  } catch {
-    return '';
-  }
-}
-
-async function loadKeenHosts(profileId) {
-  const id = profileId || ACTIVE_PROFILE_ID || 'default';
-  const key = 'keen_hosts__' + id;
-  return new Promise((resolve) => {
-    chrome.storage.local.get({ [key]: [] }, (res) => resolve(Array.isArray(res[key]) ? res[key] : []));
-  });
-}
-function saveKeenHosts(list, profileId) {
-  const id = profileId || ACTIVE_PROFILE_ID || 'default';
-  const key = 'keen_hosts__' + id;
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ [key]: list }, resolve);
-  });
-}
-
-function mask(s, keep=2) {
-  if (!s) return '';
-  return '•'.repeat(Math.max(0, s.length - keep)) + s.slice(-keep);
-}
-
-function renderKeenList(items) {
-  const root = keenElems.list;
-  root.innerHTML = '';
-  if (!items.length) {
-    const d = document.createElement('div');
-    d.className = 'muted';
-    d.textContent = 'Список пуст. Добавьте первый роутер выше.';
-    root.appendChild(d);
-    return;
-  }
-  items.forEach((h) => {
-    const row = document.createElement('div');
-    row.className = 'k-item';
-
-    const meta = document.createElement('div');
-    meta.className = 'k-meta';
-    const title = document.createElement('div');
-    title.className = 'k-title';
-    const displayName = h.name || h.origin;
-    title.textContent = displayName + (h.name ? ` (${h.origin} — ${h.user})` : ` — ${h.user}`);
-    const sub = document.createElement('div');
-    sub.className = 'k-sub';
-    sub.textContent = `Пароль: ${mask(h.pass)}${h.lastOkTs ? ` • проверен: ${new Date(h.lastOkTs).toLocaleString()}` : ''}`;
-    meta.appendChild(title); meta.appendChild(sub);
-
-    const status = document.createElement('div');
-    status.className = 'k-status ' + (h.lastOk ? 'ok' : (h.lastOk === false ? 'err' : ''));
-    status.textContent = h.lastOk ? 'OK' : (h.lastOk === false ? (h.lastErr || 'Ошибка') : '—');
-
-    const actions = document.createElement('div');
-    actions.className = 'k-actions';
-    const btnTest = document.createElement('button');
-    btnTest.className = 'btn';
-    btnTest.textContent = 'Проверить';
-    btnTest.onclick = async () => {
-      btnTest.disabled = true; btnTest.textContent = 'Проверяем…';
-      try {
-        const info = await keenProbe(h);
-        h.lastOk = true; h.lastOkTs = Date.now(); h.lastErr = '';
-        status.className = 'k-status ok'; status.textContent = 'OK';
-        sub.textContent = `Пароль: ${mask(h.pass)} • проверен: ${new Date(h.lastOkTs).toLocaleString()}`;
-        await commitUpdate(h);
-      } catch (e) {
-        h.lastOk = false; h.lastErr = String(e?.message || e || 'Ошибка');
-        status.className = 'k-status err'; status.textContent = 'Ошибка';
-        await commitUpdate(h);
-      } finally {
-        btnTest.disabled = false; btnTest.textContent = 'Проверить';
-      }
-    };
-
-    const btnEdit = document.createElement('button');
-    btnEdit.className = 'btn';
-    btnEdit.textContent = 'Редактировать';
-    btnEdit.onclick = async () => {
-      editingRouterId = h.id;
-      keenElems.name.value = h.name || '';
-      keenElems.url.value = h.origin || '';
-      keenElems.user.value = h.user || '';
-      keenElems.pass.value = h.pass || '';
-      keenElems.addBtn.textContent = 'Сохранить изменения';
-      if (keenElems.cancelBtn) keenElems.cancelBtn.style.display = 'inline-block';
-      
-      keenElems.name.focus();
-      keenElems.name.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    };
-
-    const btnDel = document.createElement('button');
-    btnDel.className = 'btn';
-    btnDel.textContent = 'Удалить';
-    btnDel.onclick = async () => {
-      const confirmed = await customConfirm(`Удалить роутер "${h.name || h.origin}"?`);
-      if (!confirmed) return;
-      const list = await loadKeenHosts();
-      const next = list.filter(x => x.id !== h.id);
-      await saveKeenHosts(next);
-      renderKeenList(next);
-    };
-
-    actions.appendChild(btnTest);
-    actions.appendChild(btnEdit);
-    actions.appendChild(btnDel);
-
-    row.appendChild(meta);
-    row.appendChild(status);
-    row.appendChild(actions);
-    root.appendChild(row);
-  });
-}
-
-async function commitUpdate(item) {
-  const list = await loadKeenHosts();
-  const idx = list.findIndex(x => x.id === item.id);
-  if (idx >= 0) {
-    list[idx] = item;
-    await saveKeenHosts(list);
-  }
-}
-
-async function keenProbe(h) {
-  const headers = {
-    'Authorization': 'Basic ' + btoa(`${h.user}:${h.pass}`),
-    'Accept': 'application/json'
-  };
-  const url1 = h.origin.replace(/\/+$/,'') + '/rci/show/system';
-  const r1 = await fetch(url1, { method: 'GET', headers });
-  if (r1.ok) {
-    const js = await r1.json().catch(()=> ({}));
-    return js;
-  }
-}
-
-function validateKeenInput() {
-  const name = (keenElems.name.value || '').trim();
-  const origin = normalizeOrigin(keenElems.url.value);
-  const user = (keenElems.user.value || '').trim();
-  const pass = (keenElems.pass.value || '').trim();
-  if (!origin) throw new Error('Укажите корректный адрес (http/https).');
-  if (!user) throw new Error('Укажите пользователя.');
-  if (!pass) throw new Error('Укажите пароль.');
-  return { name: name || null, origin, user, pass };
 }
 
 function encodeB64(jsonObj) {
@@ -822,16 +622,7 @@ async function saveTheme(theme) {
 }
 
 async function applyTheme(theme) {
-  const body = document.body;
-  const themeToggle = $('themeToggle');
-  
-  if (theme === 'light') {
-    body.classList.add('light');
-    if (themeToggle) themeToggle.textContent = '☀️';
-  } else {
-    body.classList.remove('light');
-    if (themeToggle) themeToggle.textContent = '🌙';
-  }
+  document.body.classList.toggle('light', theme === 'light');
 }
 
 async function initTheme() {
@@ -982,8 +773,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderProfilesSelect(data);
     const item = getActiveProfile(data);
     await applyProfile(item);
-    const list = await loadKeenHosts(id);
-    renderKeenList(list);
   });
 
   profileElems.addBtn.addEventListener('click', async () => {
@@ -1056,7 +845,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const v = profileElems.exportLink.value;
     if (!v) return;
     navigator.clipboard.writeText(v).then(() => {
-      profileElems.copyExportBtn.textContent = '✅ Скопировано';
+      profileElems.copyExportBtn.textContent = 'Скопировано';
       setTimeout(() => profileElems.copyExportBtn.textContent = 'Копировать ссылку', 1000);
     });
   });
@@ -1137,106 +926,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   } catch (e) {
     console.error(e);
-  }
-
-  const list = await loadKeenHosts();
-  renderKeenList(list);
-
-  keenElems.addBtn?.addEventListener('click', async () => {
-    keenElems.addBtn.disabled = true;
-    keenElems.addState.textContent = editingRouterId ? 'Сохраняем изменения…' : 'Сохраняем…';
-    try {
-      const { name, origin, user, pass } = validateKeenInput();
-      const cur = await loadKeenHosts();
-      
-      let item;
-      if (editingRouterId) {
-        const existing = cur.find(x => x.id === editingRouterId);
-        if (existing) {
-          item = { ...existing, name, origin, user, pass };
-          keenElems.addState.textContent = 'Проверяю доступность…';
-          try {
-            await keenProbe(item);
-            item.lastOk = true;
-            item.lastOkTs = Date.now();
-            item.lastErr = '';
-          } catch (e) {
-            if (existing.lastOk !== undefined) {
-              item.lastOk = existing.lastOk;
-              item.lastOkTs = existing.lastOkTs;
-              item.lastErr = existing.lastErr;
-            } else {
-              item.lastOk = false;
-              item.lastErr = String(e?.message || e || 'Ошибка');
-            }
-          }
-          const index = cur.findIndex(x => x.id === editingRouterId);
-          cur[index] = item;
-        } else {
-          throw new Error('Роутер для редактирования не найден');
-        }
-      } else {
-        item = { id: uuid(), name, origin, user, pass, lastOk: null, lastOkTs: 0, lastErr: '' };
-        keenElems.addState.textContent = 'Пробный запрос к CLI…';
-        try {
-          await keenProbe(item);
-          item.lastOk = true;
-          item.lastOkTs = Date.now();
-        } catch (e) {
-          item.lastOk = false;
-          item.lastErr = String(e?.message || e || 'Ошибка');
-        }
-        cur.push(item);
-      }
-
-      await saveKeenHosts(cur);
-      renderKeenList(cur);
-
-      keenElems.addState.textContent = editingRouterId 
-        ? (item.lastOk ? 'Изменения сохранены ✓' : 'Изменения сохранены ✓ (CLI недоступен)')
-        : (item.lastOk ? 'Добавлено ✓ (CLI доступен)' : 'Добавлено ✓ (но CLI не ответил)');
-      keenElems.addState.classList.toggle('ok', true);
-
-      resetKeenForm();
-    } catch (e) {
-      keenElems.addState.textContent = String(e?.message || e || 'Ошибка');
-      keenElems.addState.classList.toggle('ok', false);
-    } finally {
-      setTimeout(() => { keenElems.addState.textContent = '—'; keenElems.addState.classList.remove('ok'); }, 2500);
-      keenElems.addBtn.disabled = false;
-    }
-  });
-
-  if (keenElems.cancelBtn) {
-    keenElems.cancelBtn.addEventListener('click', () => {
-      resetKeenForm();
-    });
-  }
-
-  const passwordToggle = document.getElementById('keenPassToggle');
-  if (passwordToggle && keenElems.pass) {
-    passwordToggle.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      const isPassword = keenElems.pass.type === 'password';
-      keenElems.pass.type = isPassword ? 'text' : 'password';
-      
-      const eyeOpen = passwordToggle.querySelector('.eye-open');
-      const eyeClosed = passwordToggle.querySelector('.eye-closed');
-      
-      if (isPassword) {
-        if (eyeOpen) eyeOpen.style.display = 'none';
-        if (eyeClosed) eyeClosed.style.display = 'block';
-        passwordToggle.setAttribute('aria-label', 'Скрыть пароль');
-        passwordToggle.setAttribute('title', 'Скрыть пароль');
-      } else {
-        if (eyeOpen) eyeOpen.style.display = 'block';
-        if (eyeClosed) eyeClosed.style.display = 'none';
-        passwordToggle.setAttribute('aria-label', 'Показать пароль');
-        passwordToggle.setAttribute('title', 'Показать пароль');
-      }
-    });
   }
 });
 

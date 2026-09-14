@@ -1,89 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>Domain Inspector</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>🔎 Domain Inspector</h1>
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <button id="themeBtn" class="theme-toggle" title="Переключить тему" aria-label="Переключить тему">🌙</button>
-        <button id="settingsBtn" class="theme-toggle" title="Параметры" aria-label="Параметры">⚙️</button>
+  <div class="topbar">
+    <span id="groupLabel" class="host"></span>
+    <div class="topbar-actions">
+      <button id="themeBtn" class="icon-btn" title="Переключить тему" aria-label="Переключить тему">
+        <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <button id="settingsBtn" class="icon-btn" title="Параметры" aria-label="Параметры">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <header class="header">
+    <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <h1>Domain Inspector</h1>
+    <a class="byline" href="https://likdev.ru/" target="_blank" rel="noopener" title="likdev.ru">
+      <span class="byline-by">by</span>
+      <svg class="byline-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 7-5 5 5 5"/><path d="m16 7 5 5-5 5"/><path d="m13.6 4.5-3.2 15"/></svg>
+      <span class="byline-name">likDev</span>
+    </a>
+    <span id="domainsCount" class="count"></span>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Режимы">
+    <button id="tab-scan" role="tab" aria-selected="true" aria-controls="mode-scan">Сканирование</button>
+    <button id="tab-convert" role="tab" aria-selected="false" aria-controls="mode-convert">Конвертация</button>
+  </div>
+
+  <section id="mode-scan" class="mode-pane active" role="tabpanel" aria-labelledby="tab-scan">
+    <div class="fields">
+      <div class="field">
+        <label for="scanCollapseMode">Сжатие</label>
+        <select id="scanCollapseMode">
+          <option value="all">Сжатие всех субдоменов</option>
+          <option value="auto" selected>Сжатие субдоменов (2+→база)</option>
+          <option value="none">Без сжатия</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="scanFormat">Формат</label>
+        <select id="scanFormat">
+          <option value="keen" selected>KeenDNS — по строкам</option>
+          <option value="adguard">AdGuard — через запятые без пробела</option>
+          <option value="3xui">3x-ui — через запятые с пробелом</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="scanDomainFilter">Фильтр</label>
+        <select id="scanDomainFilter">
+          <option value="all" selected>Все домены</option>
+          <option value="withResponse">Домены с ответами</option>
+          <option value="withoutResponse">Домены без ответов</option>
+        </select>
       </div>
     </div>
 
-    <div class="mode-tabs" role="tablist" aria-label="Режимы">
-      <button id="tab-scan" role="tab" aria-selected="true" aria-controls="mode-scan">Сканирование</button>
-      <button id="tab-convert" role="tab" aria-selected="false" aria-controls="mode-convert">Конвертация</button>
+    <ul id="domains" class="domain-list">
+      <li class="list-status loading">Сканирование…</li>
+    </ul>
+  </section>
+
+  <section id="mode-convert" class="mode-pane" role="tabpanel" aria-labelledby="tab-convert">
+    <div class="fields">
+      <div class="field">
+        <label for="convertCollapseMode">Сжатие</label>
+        <select id="convertCollapseMode">
+          <option value="all">Сжатие всех субдоменов</option>
+          <option value="auto" selected>Сжатие субдоменов (2+→база)</option>
+          <option value="none">Без сжатия</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="convertFormat">Формат</label>
+        <select id="convertFormat">
+          <option value="keen" selected>KeenDNS — по строкам</option>
+          <option value="adguard">AdGuard — через запятые без пробела</option>
+          <option value="3xui">3x-ui — через запятые с пробелом</option>
+        </select>
+      </div>
     </div>
 
-    <section id="mode-scan" class="mode-pane active" role="tabpanel" aria-labelledby="tab-scan">
-      <h3>🌐 Домены на этой странице:</h3>
-
-      <label for="scanCollapseMode" class="scan-format-label">Режим сжатия субдоменов</label>
-      <select id="scanCollapseMode">
-        <option value="all">Сжатие всех субдоменов</option>
-        <option value="auto" selected>Сжатие субдоменов (2+→база)</option>
-        <option value="none">Без сжатия</option>
-      </select>
-
-      <label for="scanFormat" class="scan-format-label">Формат вывода</label>
-      <select id="scanFormat">
-        <option value="keen" selected>KeenDNS — по строкам</option>
-        <option value="adguard">AdGuard — через запятые без пробела</option>
-        <option value="3xui">3x-ui — через запятые с пробелом</option>
-      </select>
-
-      <label for="scanDomainFilter" class="scan-format-label">Фильтр доменов</label>
-      <select id="scanDomainFilter">
-        <option value="all" selected>Все домены</option>
-        <option value="withResponse">Домены с ответами</option>
-        <option value="withoutResponse">Домены без ответов</option>
-      </select>
-
-      <div id="groupLabel" class="muted"></div>
-      <pre id="domains">🔍 Сканирование...</pre>
-      <div id="domainsCount" class="muted"></div>
-
-      <div class="actions-row">
-        <button id="copyBtn">Скопировать все домены</button>
-        <button id="sendKeeneticBtn" disabled title="Недоступно">Отправить на Keenetic</button>
-      </div>
-    </section>
-
-    <section id="mode-convert" class="mode-pane" role="tabpanel" aria-labelledby="tab-convert">
-      <h3>✂️ Конвертация списка доменов</h3>
-
-      <label for="convertCollapseMode" class="scan-format-label">Режим сжатия субдоменов</label>
-      <select id="convertCollapseMode">
-        <option value="all">Сжатие всех субдоменов</option>
-        <option value="auto" selected>Сжатие субдоменов (2+→база)</option>
-        <option value="none">Без сжатия</option>
-      </select>
-
-      <label for="convertFormat" class="scan-format-label">Формат вывода</label>
-      <select id="convertFormat">
-        <option value="keen" selected>KeenDNS — по строкам</option>
-        <option value="adguard">AdGuard — через запятые без пробела</option>
-        <option value="3xui">3x-ui — через запятые с пробелом</option>
-      </select>
-
-      <textarea id="convertInput" rows="8" placeholder="Вставьте список доменов или URL.
+    <textarea id="convertInput" rows="6" placeholder="Вставьте список доменов или URL.
 Разделение выполняется автоматически по любым спецсимволам, кроме точки и тире."></textarea>
 
-      <pre id="convertOutput"></pre>
+    <pre id="convertOutput"></pre>
+  </section>
 
-      <div class="actions-row">
-        <button id="copyConvertBtn">Скопировать результат</button>
-        <button id="sendKeeneticBtnConvert" disabled title="Недоступно">Отправить на Keenetic</button>
-      </div>
-    </section>
-
-    <button id="donateBtn">❤️ Поддержать развитие</button>
-  </div>
+  <footer class="footer">
+    <span class="copy-slot copy-scan">
+      <button id="copyBtn" class="copy-btn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
+        <span class="btn-label">Копировать</span>
+      </button>
+    </span>
+    <span class="copy-slot copy-convert">
+      <button id="copyConvertBtn" class="copy-btn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
+        <span class="btn-label">Копировать</span>
+      </button>
+    </span>
+    <button id="donateBtn" class="donate-btn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 10c0 5.65-7 10-7 10Z"/></svg>
+      Поддержать
+    </button>
+  </footer>
 
   <script src="tldts.umd.min.js"></script>
   <script src="popup.js"></script>

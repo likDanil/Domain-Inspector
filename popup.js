@@ -124,8 +124,7 @@ function initAllCustomSelects() {
 
 document.addEventListener('DOMContentLoaded', () => {
   const copyBtn = document.getElementById('copyBtn');
-  const sendBtn = document.getElementById('sendKeeneticBtn');
-  const domainsPre = document.getElementById('domains');
+  const domainsList = document.getElementById('domains');
   const scanFormat = document.getElementById('scanFormat');
   const scanCollapseMode = document.getElementById('scanCollapseMode');
   const scanDomainFilter = document.getElementById('scanDomainFilter');
@@ -160,13 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function applyTheme(theme) {
-    if (theme === 'light') {
-      body.classList.add('light');
-      if (themeBtn) themeBtn.textContent = '☀️';
-    } else {
-      body.classList.remove('light');
-      if (themeBtn) themeBtn.textContent = '🌙';
-    }
+    body.classList.toggle('light', theme === 'light');
   }
 
   async function initTheme() {
@@ -323,16 +316,40 @@ document.addEventListener('DOMContentLoaded', () => {
   let lastRawWithStatus = [];
   let lastScanOut = [];
   let scanError = false;
+  let pageBase = '';
   copyBtn.style.display = 'none';
-  sendBtn.style.display = 'none';
-  sendBtn.disabled = true;
 
   function updateButtonsVisibility(out) {
-    const has = (out && out.length) ? true : false;
-    copyBtn.style.display = has ? 'inline-flex' : 'none';
-    const keenSelected = (scanFormat.value === 'keen');
-    sendBtn.style.display = (has && keenSelected) ? 'inline-flex' : 'none';
-    sendBtn.disabled = !(has && keenSelected);
+    copyBtn.style.display = (out && out.length) ? 'inline-flex' : 'none';
+  }
+
+  function renderStatus(text, kind) {
+    const li = document.createElement('li');
+    li.className = `list-status ${kind}`;
+    li.textContent = text;
+    domainsList.replaceChildren(li);
+  }
+
+  function renderDomains(list) {
+    const items = list.map((domain) => {
+      const li = document.createElement('li');
+      li.className = 'domain';
+      const name = document.createElement('span');
+      name.className = 'domain-name';
+      name.textContent = domain;
+      name.title = domain;
+      const mark = document.createElement('span');
+      if (pageBase && getBaseDomain(domain) === pageBase) {
+        mark.className = 'badge-main';
+        mark.textContent = 'Основной';
+      } else {
+        mark.className = 'dot';
+        mark.title = 'Сторонний домен';
+      }
+      li.append(name, mark);
+      return li;
+    });
+    domainsList.replaceChildren(...items);
   }
 
   function filterDomains(domains, domainsWithStatus, filterMode) {
@@ -385,11 +402,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function applyOutput() {
     if (!lastRaw.length) {
       if (scanError) {
-        domainsPre.textContent = '❌ Не удалось получить данные. Перезагрузите страницу и попробуйте снова.';
+        renderStatus('Не удалось получить данные. Перезагрузите страницу и попробуйте снова.', 'error');
         domainsCount.textContent = '';
       } else {
-        domainsPre.textContent = 'Не найдено доменов. Попробуйте позже.';
-        domainsCount.textContent = '0 доменов';
+        renderStatus('Не найдено доменов. Попробуйте позже.', 'empty');
+        domainsCount.textContent = '0';
       }
       updateButtonsVisibility([]);
       return;
@@ -402,13 +419,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const out = filterDomains(collapsedDomains, lastRawWithStatus, filterMode);
     
     lastScanOut = out;
-    domainsPre.textContent = formatOutput(out, scanFormat.value);
-    domainsCount.textContent = `${out.length} ${ruPlural(out.length)}`;
+    if (out.length) renderDomains(out);
+    else renderStatus('Нет доменов по выбранному фильтру.', 'empty');
+    domainsCount.textContent = String(out.length);
+    domainsCount.title = `${out.length} ${ruPlural(out.length)}`;
     updateButtonsVisibility(out);
   }
 
   async function runScan() {
-    domainsPre.textContent = '🔍 Сканирование...';
+    renderStatus('Сканирование…', 'loading');
     domainsCount.textContent = '';
     updateButtonsVisibility([]);
     scanError = false;
@@ -417,7 +436,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let host = '';
       try { host = new URL(tabs[0].url).hostname; } catch (_) {}
-      groupLabel.textContent = host ? `Группа: ${host}` : 'Группа: —';
+      groupLabel.textContent = host || '—';
+      pageBase = host ? getBaseDomain(host) : '';
 
       const response = await sendMessage(tabs[0].id, { action: 'getDomains' });
       const raw = (response && response.domains) || [];
@@ -433,11 +453,17 @@ document.addEventListener('DOMContentLoaded', () => {
       scanError = true;
       lastRaw = [];
       lastRawWithStatus = [];
-      domainsPre.textContent = '❌ Не удалось получить данные. Перезагрузите страницу и попробуйте снова.';
+      renderStatus('Не удалось получить данные. Перезагрузите страницу и попробуйте снова.', 'error');
       domainsCount.textContent = '';
       updateButtonsVisibility([]);
     }
   }
+
+  // Older versions stored router logins and passwords here; nothing reads them anymore.
+  chrome.storage.local.get(null, (items) => {
+    const stale = Object.keys(items || {}).filter((key) => key.startsWith('keen_hosts'));
+    if (stale.length) chrome.storage.local.remove(stale);
+  });
 
   chrome.storage.sync.get({ defaultCollapseMode: 'auto', defaultFormat: 'keen', defaultDomainFilter: 'all' }, (res) => {
     const defCollapse = res.defaultCollapseMode || 'auto';
@@ -480,43 +506,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (scanCollapseMode) scanCollapseMode.addEventListener('change', applyOutput);
   if (scanDomainFilter) scanDomainFilter.addEventListener('change', applyOutput);
 
-  copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(domainsPre.textContent || '').then(() => {
-      copyBtn.textContent = '✅ Скопировано';
-      setTimeout(() => (copyBtn.textContent = 'Скопировать все домены'), 1200);
-    });
-  });
+  function flashCopied(btn) {
+    const label = btn.querySelector('.btn-label');
+    btn.classList.add('copied');
+    label.textContent = 'Скопировано';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      label.textContent = 'Копировать';
+    }, 1200);
+  }
 
-  sendBtn.addEventListener('click', async () => {
-    if (!lastScanOut || !lastScanOut.length) return;
-    
-    let groupName = '';
-    try {
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tabs[0] && tabs[0].url) {
-        const host = new URL(tabs[0].url).hostname;
-        if (host) {
-          const parts = host.split('.').filter(Boolean);
-          groupName = parts.length <= 2 ? host : parts.slice(-2).join('.');
-        }
-      }
-    } catch (_) {}
-    
-    if (!groupName && lastScanOut.length > 0) {
-      const firstDomain = lastScanOut[0];
-      const parts = firstDomain.split('.').filter(Boolean);
-      groupName = parts.length <= 2 ? firstDomain : parts.slice(-2).join('.');
-    }
-    
-    await chrome.storage.session.set({
-      keen_payload: {
-        domains: lastScanOut,
-        group: groupName || 'group'
-      }
-    });
-    
-    const url = chrome.runtime.getURL('keen-send.html');
-    chrome.tabs.create({ url });
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(formatOutput(lastScanOut, scanFormat.value)).then(() => flashCopied(copyBtn));
   });
 
   const convertInput        = document.getElementById('convertInput');
@@ -524,41 +525,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const copyConvertBtn      = document.getElementById('copyConvertBtn');
   const convertFormat       = document.getElementById('convertFormat');
   const convertCollapseMode = document.getElementById('convertCollapseMode');
-  const sendConvertBtn      = document.getElementById('sendKeeneticBtnConvert');
 
   copyConvertBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(convertOutput.textContent || '').then(() => {
-      copyConvertBtn.textContent = '✅ Скопировано';
-      setTimeout(() => (copyConvertBtn.textContent = '📋 Скопировать результат'), 1200);
-    });
-  });
-
-  sendConvertBtn.addEventListener('click', async () => {
-    if (!lastConvertOut || !lastConvertOut.length) return;
-    
-    let groupName = 'group';
-    if (lastConvertOut.length > 0) {
-      const firstDomain = lastConvertOut[0];
-      const parts = firstDomain.split('.').filter(Boolean);
-      groupName = parts.length <= 2 ? firstDomain : parts.slice(-2).join('.');
-    }
-    
-    await chrome.storage.session.set({
-      keen_payload: {
-        domains: lastConvertOut,
-        group: groupName
-      }
-    });
-    
-    const url = chrome.runtime.getURL('keen-send.html');
-    chrome.tabs.create({ url });
+    navigator.clipboard.writeText(convertOutput.textContent || '').then(() => flashCopied(copyConvertBtn));
   });
 
   let lastConvertOut = [];
   convertOutput.style.display = 'none';
   copyConvertBtn.style.display = 'none';
-  sendConvertBtn.style.display = 'none';
-  sendConvertBtn.disabled = true;
 
   function tokenizeFlexible(raw) {
     const noSchemes = (raw || '').replace(/\b[a-z]{2,20}:\/\/+/gi, '');
@@ -567,11 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateConvertButtonsVisibility(out) {
-    const has = (out && out.length) ? true : false;
-    copyConvertBtn.style.display = has ? 'inline-flex' : 'none';
-    const keenSelected = (convertFormat.value === 'keen');
-    sendConvertBtn.style.display = (has && keenSelected) ? 'inline-flex' : 'none';
-    sendConvertBtn.disabled = !(has && keenSelected);
+    copyConvertBtn.style.display = (out && out.length) ? 'inline-flex' : 'none';
   }
 
   function runConvert() {
